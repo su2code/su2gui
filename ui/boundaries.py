@@ -1,16 +1,25 @@
 # boundaries gittree menu
 
 # note that in the main menu, we need to call/add the following:
-# 1) from boundaries import *
+# 1) from ui.boundaries import *
 # 2) call boundaries_card() in SinglePageWithDrawerLayout
 # 3) define a node in the gittree (pipeline)
 # 4) define any global state variables that might be needed
 
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 # definition of ui_card
-from uicard import ui_card, ui_subcard, ui_card_children_only,ui_card_parent_only, server
+from ui.uicard import ui_card, ui_subcard, ui_card_children_only, ui_card_parent_only, server
 from trame.widgets import vuetify
-from su2_json import *
-from materials import *
+from core.su2_json import *
+from ui.materials import *
 state, ctrl = server.state, server.controller
 
 # for dialog cards:

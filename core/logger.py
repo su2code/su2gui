@@ -1,9 +1,18 @@
 from datetime import datetime
-from uicard import server
+import sys
+import os
 import logging
-from trame.widgets import vuetify, markdown
 from pathlib import Path
-BASE = Path(__file__).parent
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from ui.uicard import server
+from trame.widgets import vuetify, markdown
+
+BASE = Path(__file__).parent.parent
 
 # Extract state and controller from the server
 state, ctrl = server.state, server.controller

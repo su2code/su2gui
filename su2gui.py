@@ -19,24 +19,24 @@ from trame.widgets import trame
 from datetime import date
 
 # Import json setup for writing the config file in json and cfg file format.
-from su2_json import *
+from core.su2_json import *
 # Export su2 mesh file.
-from su2_io import save_su2mesh, save_json_cfg_file
+from core.su2_io import save_su2mesh, save_json_cfg_file
 #
-from vtk_helper import *
+from ui.vtk_helper import *
 # 
-from cases import update_manage_case_dialog_card, manage_case_dialog_card, case_name_dialog_card, case_args
+from ui.cases import update_manage_case_dialog_card, manage_case_dialog_card, case_name_dialog_card, case_args
 #
 # Definition of ui_card and the server.
-from uicard import ui_card, server
+from ui.uicard import ui_card, server
 
 # Logging funtions
-from logger import log, clear_logs , Error_dialog_card, Warn_dialog_card, logs_tab
+from core.logger import log, clear_logs, Error_dialog_card, Warn_dialog_card, logs_tab
 
 # Config tab
-from config import *
+from ui.config import *
 # User configuration
-from user_config import get_su2_path, set_su2_path, clear_config
+from core.user_config import get_su2_path, set_su2_path, clear_config
 import platform
 
 import vtk
@@ -87,21 +87,21 @@ import vtkmodules.vtkRenderingOpenGL2  # noqa
 # We then call the card in the SinglePageWithDrawerLayout() function.       #
 #############################################################################
 # gittree menu : import mesh tab                                            #
-from mesh import *
+from ui.mesh import *
 # gittree menu : import physics tab                                         #
-from physics import *
+from ui.physics import *
 # gittree menu : import materials tab                                       #
-from materials import *
+from ui.materials import *
 # gittree menu : import numerics tab                                        #
-from numerics import *
+from ui.numerics import *
 # gittree menu : import boundaries tab                                      #
-from boundaries import *
+from ui.boundaries import *
 # gittree menu : import solver tab                                          #
-from solver import *
+from core.solver import *
 # gittree menu : import initialization tab                                  #
-from initialization import *
+from ui.initialization import *
 # gittree menu : import file I/O tab                                        #
-from fileio import *
+from ui.fileio import *
 #############################################################################
 
 
@@ -111,7 +111,7 @@ from fileio import *
 state, ctrl = server.state, server.controller
 
 
-from pipeline import PipelineManager
+from core.pipeline import PipelineManager
 from pathlib import Path
 BASE = Path(__file__).parent
 
@@ -1692,7 +1692,7 @@ def main():
 
     # If --su2 argument is provided, update the stored path
     if args.su2:
-        from user_config import set_su2_path
+        from core.user_config import set_su2_path
         set_su2_path(args.su2)
         state.su2_cfd_path = args.su2
 

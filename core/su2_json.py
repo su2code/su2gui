@@ -1,15 +1,21 @@
 
 # ##################################### JSON ##############################
-from uicard import ui_card, ui_subcard, server
+import sys
+import os
+from pathlib import Path
 
-# Logging function
-from logger import log
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from ui.uicard import ui_card, ui_subcard, server
+from core.logger import log
 
 import json,jsonschema
 from jsonschema import validate, ValidationError, SchemaError
 
-from pathlib import Path
-BASE = Path(__file__).parent
+BASE = Path(__file__).parent.parent
 
 state, ctrl = server.state, server.controller
 

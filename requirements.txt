@@ -1,0 +1,11 @@
+jsonschema>=4.19.1
+pandas>=2.1.0
+trame>=3.2.0
+trame-client>=2.12.0
+trame-components>=2.2.0
+trame-markdown>=3.0.0
+trame-matplotlib>=2.0.0
+trame-server>=2.12.0
+trame-vtk>=2.5.0
+trame-vuetify>=2.3.0
+vtk>=9.2.0

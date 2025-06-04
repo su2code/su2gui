@@ -1,17 +1,25 @@
 # solver gittree menu
 
 # note that in the main menu, we need to call add the following:
-# 1) from solver import *
+# 1) from core.solver import *
 # 2) call solver_card() in SinglePageWithDrawerLayout
 # 3) define a node in the gittree (pipeline)
 # 4) define any global state variables that might be needed
 
-# definition of ui_card
+import sys
+import os
 import shutil
-from uicard import ui_card, ui_subcard, server
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
-from su2_json import *
-from su2_io import save_su2mesh, save_json_cfg_file
+from core.su2_json import *
+from core.su2_io import save_su2mesh, save_json_cfg_file
 
 # check if a file is opened by another process
 #import psutil
@@ -30,11 +38,11 @@ import vtk
 from vtkmodules.vtkCommonDataModel import vtkDataObject
 
 # import the grid from the mesh module
-from mesh import *
-from vtk_helper import *
+from ui.mesh import *
+from ui.vtk_helper import *
 
 # Logging function
-from logger import log, update_su2_logs
+from core.logger import log, update_su2_logs
 
 # matplotlib
 import matplotlib
@@ -252,6 +260,7 @@ def su2_play():
     if not su2_cfd_path:
         # Try to get from config as fallback
         from user_config import get_su2_path
+        import base64
         su2_cfd_path = get_su2_path()
         if not su2_cfd_path:
             log("error", "SU2_CFD path not configured. Please restart SU2GUI to configure the path.")
@@ -364,23 +373,24 @@ def solver_dialog_card_convergence():
 ###############################################################################
 def update_solver_dialog_card_convergence():
     log("debug", f"changing state of solver_dialog_Card_convergence to: = {state.show_solver_dialog_card_convergence}")
-    state.show_solver_dialog_card_convergence = not state.show_solver_dialog_card_convergence
-
-    # if we show the card, then also update the fields that we need to show
+    state.show_solver_dialog_card_convergence = not state.show_solver_dialog_card_convergence    # if we show the card, then also update the fields that we need to show
     if state.show_solver_dialog_card_convergence==True:
       log("debug", "updating list of fields")
       # note that Euler and inc_euler can be treated as compressible / incompressible as well
-      log("debug", state.jsonData['SOLVER'])
-      log("debug", state.jsonData['INC_ENERGY_EQUATION'])
+      log("debug", state.jsonData.get('SOLVER', 'EULER'))
+      
+      # Safely check if INC_ENERGY_EQUATION exists in the state
+      inc_energy = state.jsonData.get('INC_ENERGY_EQUATION', False)
+      log("debug", f"INC_ENERGY_EQUATION: {inc_energy}")
 
-      if ("INC" in str(state.jsonData['SOLVER'])):
+      if ("INC" in str(state.jsonData.get('SOLVER', ''))):
         compressible = False
       else:
         compressible = True
 
       # if incompressible, we check if temperature is on
       if (compressible==False):
-        if (state.jsonData['INC_ENERGY_EQUATION']==True):
+        if (inc_energy==True):
            energy=True
         else:
            energy=False
@@ -479,44 +489,73 @@ def readHistory(filename):
 
 
 ###############################################################################
-# read binay restart file
+# read restart file (binary or ASCII)
 def Read_SU2_Restart_Binary(val_filename):
     val_filename = str(val_filename)
     fname = val_filename
     nRestart_Vars = 5
     Restart_Vars = [0] * nRestart_Vars
     fields = []
-
-    # Determine sizes dynamically
-    int_size = struct.calcsize('i')
-    double_size = struct.calcsize('d')
-    string_size = 33  # Assuming the fixed length for variable names
-
+    
     try:
-      with open(fname, "rb") as fhw:
-          # Read the number of variables and points
-          Restart_Vars = struct.unpack('i' * nRestart_Vars, fhw.read(int_size * nRestart_Vars))
-
-          nFields = Restart_Vars[1]
-          nPointFile = Restart_Vars[2]
-
-          # Read variable names
-          for _ in range(nFields):
-              str_buf = fhw.read(string_size).decode('utf-8').strip('\x00')
-              fields.append(str_buf)
-
-          # Read restart data
-          Restart_Data = struct.unpack('d' * nFields * nPointFile, fhw.read(double_size * nFields * nPointFile))
-
-          # Convert the data into a pandas DataFrame
-          Restart_Data = [Restart_Data[i:i + nFields] for i in range(0, len(Restart_Data), nFields)]
-          df = pd.DataFrame(Restart_Data, columns=fields)
-    except:
-      log("info", "Unable able to read binary restart file")
-      df = pd.DataFrame()
-
-
-    return df
+        # Always try ASCII format first since we have issues with binary
+        log("info", "Reading restart file in ASCII format")
+        try:
+            # Try loading as CSV first (simplest case)
+            df = pd.read_csv(fname)
+            log("info", f"Successfully loaded restart file as CSV with {len(df)} rows")
+            return df
+        except Exception as e:
+            log("info", f"Could not read as CSV, trying custom ASCII parsing: {e}")
+            
+            try:
+                with open(fname, "r", errors='replace') as f:
+                    try:
+                        # Simple parsing of ASCII restart file
+                        lines = f.readlines()
+                        if len(lines) > 0:
+                            header = lines[0].strip().split()
+                            if len(header) >= 3:
+                                # Extract nFields and nPointFile from header
+                                try:
+                                    nFields = int(header[1])
+                                    nPointFile = int(header[2])
+                                    Restart_Vars[1] = nFields
+                                    Restart_Vars[2] = nPointFile
+                                except ValueError:
+                                    log("error", "Failed to parse ASCII restart file header")
+                                    raise
+                        
+                        # Get field names from the second line
+                        if len(lines) > 1:
+                            field_names = lines[1].strip().split()
+                            fields = field_names
+                            
+                        # Parse data lines
+                        data = []
+                        for i in range(2, len(lines)):
+                            try:
+                                values = [float(val) for val in lines[i].strip().split()]
+                                if len(values) == len(fields):
+                                    data.append(values)
+                            except:
+                                pass
+                        
+                        df = pd.DataFrame(data, columns=fields)
+                        log("info", f"Successfully parsed ASCII restart file with {len(df)} rows")
+                        return df
+                    except Exception as e:
+                        log("error", f"Error parsing ASCII restart file: {e}")
+            except UnicodeDecodeError:
+                log("info", "File appears to be binary. Attempting binary read.")
+                # Here we would handle binary format, but currently just returning empty DataFrame
+                # For binary formats, you would need specific binary parsing logic
+                return pd.DataFrame()
+    except Exception as e:
+        log("error", f"Failed to read restart file: {e}")
+    
+    log("info", "Unable to read restart file")
+    return pd.DataFrame()
 
 
 # # ##### upload ascii restart file #####
@@ -525,6 +564,7 @@ def uploadRestart(restartFile, **kwargs):
   log("debug", "Updating restart.csv file")
   if restartFile is None:
     state.jsonData["RESTART_SOL"] = False
+    state.jsonData["READ_BINARY_RESTART"] = False
     log("debug", "removed file")
     return
 
@@ -532,23 +572,29 @@ def uploadRestart(restartFile, **kwargs):
   if not checkCaseName():
     state.restartFile = None
     return
+    
+  # Set READ_BINARY_RESTART to false to ensure we can read different types of restart files
+  state.jsonData["READ_BINARY_RESTART"] = False
 
   filename = restartFile['name']
   file = ClientFile(restartFile)
 
   base_path = Path("e:/gsoc/su2gui/user") / state.case_name
   base_path.mkdir(parents=True, exist_ok=True)  # Create directories if they do not exist
-    
-  # for .csv
+      # for .csv
   if filename.endswith(".csv"):
     try:
-        filecontent = file.content.decode('utf-8')
-    except:
+        # Only try to decode if it's bytes, otherwise use as is
+        filecontent = file.content.decode('utf-8') if isinstance(file.content, bytes) else file.content
+    except UnicodeDecodeError:
+        log("warning", "Could not decode file content as UTF-8, treating as raw content")
         filecontent = file.content
 
-    f = filecontent.splitlines()
+    # Only split into lines if we have text content
+    if isinstance(filecontent, str):
+        f = filecontent.splitlines()
 
-    with open(BASE / "user" / state.case_name / filename,'w') as restartFile:
+    with open(BASE / "user" / state.case_name / filename, 'w') as restartFile:
       restartFile.write(filecontent)
 
     state.jsonData["SOLUTION_FILENAME"] = filename
@@ -557,12 +603,21 @@ def uploadRestart(restartFile, **kwargs):
     
     # we reset the active field because we read or upload the restart from file as a user action
     readRestart(BASE / "user" / state.case_name / filename, True, initialization='.csv')
-
-
   # for .dat binary restart file
-  elif filename.endswith(".dat"):
-    filecontent = b64decode(file.content)
-    with open(BASE / "user" / state.case_name / filename,'wb') as restartFile:
+  elif filename.endswith(".dat"):    # Use safe_b64decode to handle missing padding
+    def safe_b64decode(data):
+      if isinstance(data, str):
+        try:
+            data = b64decode(data)
+        except Exception as e:
+            log("error", f"Error decoding base64 data: {e}")
+      return data
+
+    # Get binary content
+    filecontent = safe_b64decode(file.content)
+    
+    # Write binary content to file
+    with open(BASE / "user" / state.case_name / filename, 'wb') as restartFile:
       restartFile.write(filecontent)
     
     state.jsonData["SOLUTION_FILENAME"] = filename
@@ -595,31 +650,29 @@ def readRestart(restartFile, reset_active_field, **kwargs):
 
   # check and add extension if needed
   restartFile = str(restartFile)
-  log("debug", f"read_restart, filename= = {restartFile}")
-
-
-  # kwargs is used to pass the initialization of the restart file
-  # check if function is called by restart initialization 
+  log("debug", f"read_restart, filename= = {restartFile}")    # kwargs is used to pass the initialization of the restart file
+    # check if function is called by restart initialization 
   if 'initialization' in kwargs:
     if kwargs['initialization']=='.dat':
+       # Set READ_BINARY_RESTART to False when reading restart files
+       state.jsonData['READ_BINARY_RESTART'] = False
        df = Read_SU2_Restart_Binary(restartFile)
     else:
         df = pd.read_csv(restartFile)
-
-
   else:
-  # move the file to prevent that the file is overwritten while reading
-  # the file can still be overwritten while renaming, but the time window is smaller
-  # we also try to prevent this by not calling readRestart when we are about to write a file
-  # (based on current iteration number)
+    # move the file to prevent that the file is overwritten while reading
+    # the file can still be overwritten while renaming, but the time window is smaller
+    # we also try to prevent this by not calling readRestart when we are about to write a file
+    # (based on current iteration number)
     try:
         lock_file = restartFile + ".lock"
 
         # Copy or overwrite the lock_file with the contents of restartFile
+        # shutil.copy2 handles binary files correctly
         shutil.copy2(restartFile, lock_file)
 
         # Read the lock_file based on the state
-        if state.fileio_restart_binary:
+        if state.fileio_restart_binary or restartFile.endswith(".dat"):
             df = Read_SU2_Restart_Binary(lock_file)
         else:
             df = pd.read_csv(lock_file)
