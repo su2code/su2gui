@@ -1,8 +1,17 @@
 import vtk
-from su2_json import *
-
+import sys
+import os
 from pathlib import Path
-BASE = Path(__file__).parent
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from core.su2_json import *
+from core.logger import log
+
+BASE = Path(__file__).parent.parent
 
 # remove empty lists from dictlist object
 def remove_empty_lists(d):

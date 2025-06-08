@@ -1,10 +1,20 @@
 # materials gittree menu
 
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 # definition of ui_card
-from uicard import ui_card, ui_subcard, server
+from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
-from su2_json import *
+from core.su2_json import *
 from trame.widgets import markdown
+from core.logger import log
 
 state, ctrl = server.state, server.controller
 
@@ -81,11 +91,14 @@ LMaterialsConductivityComp= [
   {"text": "Constant value", "value": 0, "json": "CONSTANT_CONDUCTIVITY"},
 ]
 
-
+# Initialize LMaterialsFluid based on the physics_comp_idx
+# This will be properly set when physics is initialized
+# LMaterialsFluid will be set based on the physics_comp_idx in the update_material function
+# Initially we'll use the incompressible values
+state.LMaterialsFluid = LMaterialsFluidIncomp.copy()
 
 # set the state variables using the json data from the config file
 def set_json_materials():
-
   # set density fluid model
   if state.physics_comp_idx:
     if 'FLUID_MODEL' in state.jsonData:
@@ -341,6 +354,7 @@ def materials_dialog_card_fluid():
 
 def update_materials_dialog_card_fluid():
     state.show_materials_dialog_card_fluid = not state.show_materials_dialog_card_fluid
+    log("info", f"Fluid model dialog state changed to: {state.show_materials_dialog_card_fluid}")
 
 #####################################################################
 def materials_dialog_card_viscosity():
@@ -452,6 +466,7 @@ def materials_dialog_card_viscosity():
 
 def update_materials_dialog_card_viscosity():
     state.show_materials_dialog_card_viscosity = not state.show_materials_dialog_card_viscosity
+    log("info", f"Viscosity model dialog state changed to: {state.show_materials_dialog_card_viscosity}")
 
 
 
@@ -526,6 +541,7 @@ def materials_dialog_card_cp():
 
 def update_materials_dialog_card_cp():
     state.show_materials_dialog_card_cp = not state.show_materials_dialog_card_cp
+    log("info", f"Heat capacity dialog state changed to: {state.show_materials_dialog_card_cp}")
 
 
 
@@ -603,6 +619,7 @@ def materials_dialog_card_conductivity():
 
 def update_materials_dialog_card_conductivity():
     state.show_materials_dialog_card_conductivity = not state.show_materials_dialog_card_conductivity
+    log("info", f"Thermal conductivity dialog state changed to: {state.show_materials_dialog_card_conductivity}")
 
 
 

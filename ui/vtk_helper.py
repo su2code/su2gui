@@ -1,6 +1,15 @@
 # vtk_helper.py
 # helper functions for vtk and rendering related actions
 
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 import vtk
 # vtm reader
 #from paraview.vtk.vtkIOXML import vtkXMLMultiBlockDataReader
@@ -44,10 +53,10 @@ from vtkmodules.vtkInteractionStyle import vtkInteractorStyleSwitch  # noqa
 import vtkmodules.vtkRenderingOpenGL2  # noqa
 
 # mesh_mapper
-from mesh import *
+from ui.mesh import *
 
 # Logging function
-from logger import log
+from core.logger import log
 
 # default visibility of the actors
 state.cube_axes_visibility = True

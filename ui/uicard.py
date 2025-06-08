@@ -1,20 +1,22 @@
 # definition of the ui cards
 
-#import os, copy
-#import pandas as pd
-#from trame.app import get_server
-#from trame.ui.vuetify import SinglePageWithDrawerLayout
-#from trame.ui.vuetify import SinglePageLayout
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 from trame.widgets import vuetify
 from trame.app import get_server
-
 
 server = get_server(client_type='vue2')
 #state, ctrl = server.state, server.controller
 
-
 # Logging function
-from logger import log
+from core.logger import log
 
 # Main definition of the card for all gittree items.
 # note that "active_ui" points to a state change

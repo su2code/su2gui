@@ -1,11 +1,20 @@
 # mesh gittree menu
 
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 # definition of ui_card
-from uicard import ui_card, ui_subcard, server
+from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
-from su2_json import *
-from materials import *
-#from vtk_helper import *
+from core.su2_json import *
+from ui.materials import *
+#from ui.vtk_helper import *
 
 import vtk
 

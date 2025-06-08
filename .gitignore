@@ -1,7 +1,7 @@
 # ignore all files in directory
 *.pex
 __pycache__/*
-/env/*
+/venv/*
 *.pyc
 *.err 
 *.out

@@ -1,7 +1,7 @@
 # fileio gittree menu
 
 # note that in the main menu, we need to call add the following:
-# 1) from fileio import *
+# 1) from ui.fileio import *
 # 2) call fileio_card() in SinglePageWithDrawerLayout
 # 3) define a node in the gittree (pipeline), note that name in gittree node should be
 #    the same as name in ui_card() in fileio_card definition
@@ -14,10 +14,19 @@
 # 7) write the results to file in su2_ui.py. Here, we need to construct any 'special' config options
 #    that are not simply the output of the json options.
 
+import sys
+import os
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
 # definition of ui_card
-from uicard import ui_card, ui_subcard, server
+from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
-from su2_json import *
+from core.su2_json import *
 
 state, ctrl = server.state, server.controller
 

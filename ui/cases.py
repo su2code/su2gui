@@ -1,26 +1,36 @@
 import shutil
-from trame.widgets import markdown
 import zipfile, os
+import sys
 from io import BytesIO
+from pathlib import Path
+
+# Add parent directory to path to allow importing from sibling directories
+parent_dir = str(Path(__file__).parent.parent.absolute())
+if parent_dir not in sys.path:
+    sys.path.append(parent_dir)
+
+from trame.widgets import markdown
 from trame.widgets import vuetify
 
-from fileio import set_json_fileio
-from initialization import set_json_initialization
-from logger import log
-from materials import set_json_materials
-from numerics import set_json_numerics
-from physics import set_json_physics
-from su2_io import save_json_cfg_file, save_su2mesh
-from su2_json import updateBCDictListfromJSON
-from uicard import server
-from mesh import root , mesh_actor, mesh_mapper
-from vtk_helper import renderer
-from solver import proc_SU2, set_json_solver
+from ui.fileio import set_json_fileio
+from ui.initialization import set_json_initialization
+from core.logger import log
+from ui.materials import set_json_materials
+from ui.numerics import set_json_numerics
+from ui.physics import set_json_physics
+from core.su2_io import save_json_cfg_file, save_su2mesh
+from core.su2_json import updateBCDictListfromJSON
+from ui.uicard import server
+from ui.mesh import root, mesh_actor, mesh_mapper
+from ui.vtk_helper import renderer
+from core.solver import proc_SU2, set_json_solver
 
 
 from pathlib import Path
-BASE = Path(__file__).parent 
+BASE = Path(__file__).parent.parent
 user_path = BASE / "user"
+# user_path = "../../user"
+
 
 state, ctrl = server.state, server.controller
 
