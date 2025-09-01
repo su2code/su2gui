@@ -27,10 +27,15 @@ except ModuleNotFoundError:
 
 BASE_DIR = Path(__file__).resolve().parent.parent      # project root
 
+# ----------------------------------------------------------------------
+# Temperature constants for dynamic boundary conditions
+# ----------------------------------------------------------------------
+BASE_TEMPERATURE = 293.0  # base wall temperature in Kelvin
+AMPLITUDE = 57.0          # temperature oscillation amplitude
+FREQUENCY = 2.0           # oscillation frequency
 
-# ----------------------------------------------------------------------
-# helpers
-# ----------------------------------------------------------------------
+
+
 def _flatten(lst: Sequence[Any]) -> List[Any]:
     # Recursively flatten any nested sequence (list/tuple).
     flat: List[Any] = []
@@ -46,7 +51,7 @@ _VAR_PATTERN = re.compile(r"\b([A-Za-z_]\w*)\b")
 
 
 def _replace_variables(text: str, variables: Dict[str, Any]) -> str:
-    """Replace bare variable names in *text* with their current values."""
+
     def repl(match: re.Match[str]) -> str:
         key = match.group(1)
         return str(variables.get(key, key))
@@ -102,7 +107,7 @@ def generate_python_wrapper(
 
     # ---------- write file -------------------------------------------------
     with target_file.open("w", encoding="utf-8") as f:
-        # shebang & imports
+        
         f.write("#!/usr/bin/env python\n\n")
         f.write("import pysu2\n")
         f.write("import numpy as np\n")
@@ -170,247 +175,109 @@ def generate_dynamic_temperature_wrapper(
         output_dir: str | Path | None = None,
         variables: Dict[str, Any] | None = None,
         temperature_formula: str | None = None,
-        wrapper_type: str = "unsteady_cht"  # "unsteady_cht" or "simple"
+        wrapper_type: str = "simple"  # Force simple position-based only
 ) -> Path:
+    # Force position-based mode only
+    wrapper_type = "simple"
     
     log("info", f"Generating dynamic temperature wrapper for marker: {boundary_marker}")
-      # Initialize defaults
-    variables = variables or {}
+    # Initialize defaults - no user variables for position-based
+    variables = {}  # Disabled for position-based only
     if temperature_formula is None:
-        if wrapper_type == "simple":
-            temperature_formula = "560.0 - 260.0*sin(x*pi / 4)"  # Position-based formula
-        else:
-            temperature_formula = "293.0 + 57.0*sin(2*pi*time)"  # Time-based formula
+        temperature_formula = "560.0 - 260.0*sin(x*pi / 4)"  # Position-based formula that works
     
-    # Use only user-provided variables
-    all_variables = variables.copy()
+    # Use only user-provided variables - DISABLED FOR POSITION-BASED
+    all_variables = {}  # No variables needed for position-based
     
     filename_py_export = Path(filename_py_export).with_suffix(".py")
     
-    # decide where to put the result
+    # 
     if output_dir is None:
         output_dir = BASE_DIR / "user" / state.case_name
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     target_file = output_dir / filename_py_export
-    log("info", f"Output file: {target_file}")    # ---------- write file -------------------------------------------------
+    log("info", f"Output file: {target_file}")    # ---------- write file - POSITION-BASED ONLY -------------------------------------------------
     with target_file.open("w", encoding="utf-8") as f:
         # Write the exact header from your template
         f.write("#!/usr/bin/env python\n\n")
         
-        if wrapper_type == "simple":
-            # Generate simplified wrapper template
-            f.write("# ----------------------------------------------------------------------\n")
-            f.write("#  Imports\n")
-            f.write("# ----------------------------------------------------------------------\n\n")
-            f.write("import pysu2\n")
-            f.write("from math import sin,pi \n")
-            f.write("from mpi4py import MPI\n\n")
-            
-            # Write user-defined variables if any
-            if all_variables:
-                f.write("# ----------------------------------------------------------------------\n")
-                f.write("#  User-Defined Variables\n")
-                f.write("# ----------------------------------------------------------------------\n\n")
-                
-                for var_name, var_value in all_variables.items():
-                    if isinstance(var_value, str):
-                        try:
-                            if '.' in var_value or 'e' in var_value.lower():
-                                numeric_value = float(var_value)
-                                f.write(f"{var_name} = {numeric_value}\n")
-                            elif var_value.isdigit() or (var_value.startswith('-') and var_value[1:].isdigit()):
-                                numeric_value = int(var_value)
-                                f.write(f"{var_name} = {numeric_value}\n")
-                            else:
-                                f.write(f"{var_name} = {var_value}\n")
-                        except ValueError:
-                            f.write(f"{var_name} = '{var_value}'\n")
-                    elif isinstance(var_value, (int, float)):
-                        f.write(f"{var_name} = {var_value}\n")
-                    else:
-                        f.write(f"{var_name} = {var_value}\n")
-                f.write("\n")
-            
-            # Simple wrapper main function
-            f.write("def main():\n")
-            f.write("  comm = MPI.COMM_WORLD\n\n")
-            f.write("  # Initialize the corresponding driver of SU2, this includes solver preprocessing.\n")
-            f.write("  try:\n")
-            f.write("    SU2Driver = pysu2.CSinglezoneDriver('config.cfg', 1, comm)\n")
-            f.write("  except TypeError as exception:\n")
-            f.write("    print('A TypeError occured in pysu2.CDriver : ', exception)\n")
-            f.write("    raise\n\n")
-            f.write("  # Get the ID of the marker we want to deform.\n")
-            f.write("  AllMarkerIDs = SU2Driver.GetMarkerIndices()\n")
-            f.write(f"  MarkerName = '{boundary_marker}'\n")
-            f.write("  MarkerID = AllMarkerIDs[MarkerName] if MarkerName in AllMarkerIDs else -1\n\n")
-            f.write("  # Number of vertices on the specified marker (per rank).\n")
-            f.write("  nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0\n\n")
-            f.write("  # Apply a load based on the coordinates.\n")
-            f.write("  if nVertex > 0:\n")
-            f.write("    for i_vertex in range(SU2Driver.GetNumberMarkerNodes(MarkerID)):\n")
-            f.write("      marker_coords = SU2Driver.MarkerCoordinates(MarkerID)\n")
-            f.write("      x = marker_coords(i_vertex, 0)\n")
-            f.write(f"      WallTemp = {temperature_formula}\n")
-            f.write("      SU2Driver.SetMarkerCustomTemperature(MarkerID, i_vertex, WallTemp)\n\n")
-            f.write("  \n")
-            f.write("  SU2Driver.StartSolver()\n")
-            f.write("  SU2Driver.Finalize()\n\n")
-            f.write("\nif __name__ == '__main__':\n")
-            f.write("  main()\n")
-            
-        else:
-            # Generate full unsteady CHT template
-            f.write("## \\file launch_unsteady_CHT_FlatPlate.py\n")
-            f.write("#  \\brief Python script to launch SU2_CFD with customized unsteady boundary conditions using the Python wrapper.\n")
-            f.write("#  \\author David Thomas\n")
-            f.write("#  \\version 8.0.1 \"Harrier\"\n")
-            f.write("#\n")
-            f.write("# SU2 Project Website: https://su2code.github.io\n")
-            f.write("#\n")
-            f.write("# The SU2 Project is maintained by the SU2 Foundation\n")
-            f.write("# (http://su2foundation.org)\n")
-            f.write("#\n")
-            f.write("# Copyright 2012-2024, SU2 Contributors (cf. AUTHORS.md)\n")
-            f.write("#\n")
-            f.write("# SU2 is free software; you can redistribute it and/or\n")
-            f.write("# modify it under the terms of the GNU Lesser General Public\n")
-            f.write("# License as published by the Free Software Foundation; either\n")
-            f.write("# version 2.1 of the License, or (at your option) any later version.\n")
-            f.write("#\n")
-            f.write("# SU2 is distributed in the hope that it will be useful,\n")
-            f.write("# but WITHOUT ANY WARRANTY; without even the implied warranty of\n")
-            f.write("# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU\n")
-            f.write("# Lesser General Public License for more details.\n")
-            f.write("#\n")
-            f.write("# You should have received a copy of the GNU Lesser General Public\n")
-            f.write("# License along with SU2. If not, see <http://www.gnu.org/licenses/>.\n\n")
-            
-            # Header comment and imports following the template
-            f.write("# ----------------------------------------------------------------------\n")
-            f.write("#  Imports\n")
-            f.write("# ----------------------------------------------------------------------\n\n")
-            f.write("import sys\n")
-            f.write("from optparse import OptionParser\t# use a parser for configuration\n")
-            f.write("import pysu2\t\t\t# imports the SU2 wrapped module\n")
-            f.write("from math import *\n\n")
-            
-            # Write user-defined variables if any
-            if all_variables:
-                f.write("# ----------------------------------------------------------------------\n")
-                f.write("#  User-Defined Variables\n")
-                f.write("# ----------------------------------------------------------------------\n\n")
-                
-                for var_name, var_value in all_variables.items():
-                    if isinstance(var_value, str):
-                        try:
-                            if '.' in var_value or 'e' in var_value.lower():
-                                numeric_value = float(var_value)
-                                f.write(f"{var_name} = {numeric_value}\n")
-                            elif var_value.isdigit() or (var_value.startswith('-') and var_value[1:].isdigit()):
-                                numeric_value = int(var_value)
-                                f.write(f"{var_name} = {numeric_value}\n")
-                            else:
-                                f.write(f"{var_name} = {var_value}\n")
-                        except ValueError:
-                            f.write(f"{var_name} = '{var_value}'\n")
-                    elif isinstance(var_value, (int, float)):
-                        f.write(f"{var_name} = {var_value}\n")
-                    else:
-                        f.write(f"{var_name} = {var_value}\n")
-                f.write("\n")
-            
-            # Main function following the exact template structure
-            f.write("# -------------------------------------------------------------------\n")
-            f.write("#  Main\n")
-            f.write("# -------------------------------------------------------------------\n\n")
-            f.write("def main():\n\n")
-            f.write("  # Command line options\n")
-            f.write("  parser=OptionParser()\n")
-            f.write("  parser.add_option(\"-f\", \"--file\", dest=\"filename\", help=\"Read config from FILE\", metavar=\"FILE\")\n")
-            f.write("  parser.add_option(\"--parallel\", action=\"store_true\",\n")
-            f.write("                    help=\"Specify if we need to initialize MPI\", dest=\"with_MPI\", default=False)\n\n")
-            f.write("  (options, args) = parser.parse_args()\n")
-            f.write("  options.nDim = int(2)\n")
-            f.write("  options.nZone = int(1)\n\n")
-            f.write("  # Import mpi4py for parallel run\n")
-            f.write("  if options.with_MPI == True:\n")
-            f.write("    from mpi4py import MPI\n")
-            f.write("    comm = MPI.COMM_WORLD\n")
-            f.write("    rank = comm.Get_rank()\n")
-            f.write("  else:\n")
-            f.write("    comm = 0\n")
-            f.write("    rank = 0\n\n")
-            f.write("  # Initialize the corresponding driver of SU2, this includes solver preprocessing\n")
-            f.write("  try:\n")
-            f.write("      SU2Driver = pysu2.CSinglezoneDriver(options.filename, options.nZone, comm);\n")
-            f.write("  except TypeError as exception:\n")
-            f.write("    print('A TypeError occured in pysu2.CDriver : ',exception)\n")
-            f.write("    if options.with_MPI == True:\n")
-            f.write("      print('ERROR : You are trying to initialize MPI with a serial build of the wrapper. Please, remove the --parallel option that is incompatible with a serial build.')\n")
-            f.write("    else:\n")
-            f.write("      print('ERROR : You are trying to launch a computation without initializing MPI but the wrapper has been built in parallel. Please add the --parallel option in order to initialize MPI for the wrapper.')\n")
-            f.write("    return\n\n")
-            f.write("\n")
-            f.write("  CHTMarkerID = None\n")
-            f.write(f"  CHTMarker = '{boundary_marker}'       # Specified by the user\n\n")
-            f.write("  # Get all the tags with the CHT option\n")
-            f.write("  CHTMarkerList =  SU2Driver.GetCHTMarkerTags()\n\n")
-            f.write("  # Get all the markers defined on this rank and their associated indices.\n")
-            f.write("  allMarkerIDs = SU2Driver.GetMarkerIndices()\n\n")
-            f.write("  #Check if the specified marker has a CHT option and if it exists on this rank.\n")
-            f.write("  if CHTMarker in CHTMarkerList and CHTMarker in allMarkerIDs.keys():\n")
-            f.write("    CHTMarkerID = allMarkerIDs[CHTMarker]\n\n")
-            f.write("  # Number of vertices on the specified marker (per rank)\n")
-            f.write("  nVertex_CHTMarker = 0         # total number of vertices (physical + halo)\n\n")
-            f.write("  if CHTMarkerID != None:\n")
-            f.write("    nVertex_CHTMarker = SU2Driver.GetNumberMarkerNodes(CHTMarkerID)\n\n")
-            f.write("  # Retrieve some control parameters from the driver\n")
-            f.write("  deltaT = SU2Driver.GetUnsteadyTimeStep()\n")
-            f.write("  TimeIter = SU2Driver.GetTimeIter()\n")
-            f.write("  nTimeIter = SU2Driver.GetNumberTimeIter()\n")
-            f.write("  time = TimeIter*deltaT\n\n")
-            f.write("  # Time loop is defined in Python so that we have access to SU2 functionalities at each time step\n")
-            f.write("  if rank == 0:\n")
-            f.write("    print(\"\\n------------------------------ Begin Solver -----------------------------\\n\")\n")
-            f.write("  sys.stdout.flush()\n")
-            f.write("  if options.with_MPI == True:\n")
-            f.write("    comm.Barrier()\n\n")
-            f.write("  while (TimeIter < nTimeIter):\n")
-            f.write("    # Time iteration preprocessing\n")
-            f.write("    SU2Driver.Preprocess(TimeIter)\n")
-            f.write("    # Define the homogeneous unsteady wall temperature on the structure (user defined)\n")
-            f.write(f"    WallTemp = {temperature_formula}\n")
-            f.write("    # Set this temperature to all the vertices on the specified CHT marker\n")
-            f.write("    for iVertex in range(nVertex_CHTMarker):\n")
-            f.write("      SU2Driver.SetMarkerCustomTemperature(CHTMarkerID, iVertex, WallTemp)\n\n")
-            f.write("    # Tell the SU2 drive to update the boundary conditions\n")
-            f.write("    SU2Driver.BoundaryConditionsUpdate()\n")
-            f.write("    # Run one time iteration (e.g. dual-time)\n")
-            f.write("    SU2Driver.Run()\n")
-            f.write("    # Postprocess the solver and exit cleanly\n")
-            f.write("    SU2Driver.Postprocess()\n")
-            f.write("    # Update the solver for the next time iteration\n")
-            f.write("    SU2Driver.Update()\n")
-            f.write("    # Monitor the solver and output solution to file if required\n")
-            f.write("    stopCalc = SU2Driver.Monitor(TimeIter)\n")
-            f.write("    SU2Driver.Output(TimeIter)\n")
-            f.write("    if (stopCalc == True):\n")
-            f.write("      break\n")
-            f.write("    # Update control parameters\n")
-            f.write("    TimeIter += 1\n")
-            f.write("    time += deltaT\n\n")
-            f.write("\n")
-            f.write("# -------------------------------------------------------------------\n")
-            f.write("#  Run Main Program\n")
-            f.write("# -------------------------------------------------------------------\n\n")
-            f.write("# this is only accessed if running from command prompt\n")
-            f.write("if __name__ == '__main__':\n")
-            f.write("    main()\n")
+        # Only position-based wrapper supported
+        f.write("# ----------------------------------------------------------------------\n")
+        f.write("#  Imports\n")
+        f.write("# ----------------------------------------------------------------------\n\n")
+        f.write("import pysu2\n")
+        f.write("from math import sin,pi,cos,sqrt,exp,tan,log,fabs \n")
+        f.write("# Note: built-in abs is available in safe_locals without import\n")
+        f.write("from mpi4py import MPI\n\n")
+          
+        f.write("# ----------------------------------------------------------------------\n")
+        f.write("#  Temperature Constants\n")
+        f.write("# ----------------------------------------------------------------------\n\n")
+        f.write(f"BASE_TEMPERATURE = {base_temperature}  # Base wall temperature (K)\n")
+        f.write(f"AMPLITUDE = {AMPLITUDE}  # Temperature amplitude\n")
+        f.write(f"FREQUENCY = {FREQUENCY}  # Frequency parameter\n")
+        f.write("# Note: x = raw coordinate, x_norm = normalized coordinate [0,1]\n")
+        f.write("# x_min, x_max = coordinate range of the marker\n")
+        f.write("# x_range = x_max - x_min\n\n")
+        
+        # No user variables section for position-based
+        
+        # wrapper main function
+        f.write("def main():\n")
+        f.write("  comm = MPI.COMM_WORLD\n\n")
+        f.write("  try:\n")
+        f.write("    SU2Driver = pysu2.CSinglezoneDriver('turb_SA_flatplate (1).cfg', 1, comm)\n")
+        f.write("  except TypeError as exception:\n")
+        f.write("    print('A TypeError occured in pysu2.CDriver : ', exception)\n")
+        f.write("    raise\n\n")
+        f.write("  AllMarkerIDs = SU2Driver.GetMarkerIndices()\n")
+        f.write(f"  MarkerName = '{boundary_marker}'\n")
+        f.write("  MarkerID = AllMarkerIDs[MarkerName] if MarkerName in AllMarkerIDs else -1\n\n")
+        f.write("  nVertex = SU2Driver.GetNumberMarkerNodes(MarkerID) if MarkerID >= 0 else 0\n\n")
+        f.write("  if nVertex > 0:\n")
+        f.write("    marker_coords = SU2Driver.MarkerCoordinates(MarkerID)\n")
+        f.write("    \n")
+        f.write("    # Determine problem dimensionality by trying to access z-coordinate\n")
+        f.write("    try:\n")
+        f.write("      # Test if we can access the z-coordinate (index 2)\n")
+        f.write("      test_z = marker_coords(0, 2)\n")
+        f.write("      nDim = 3  # 3D problem\n")
+        f.write("    except:\n")
+        f.write("      nDim = 2  # 2D problem\n")
+        f.write("    \n")
+        f.write("    x_min = float('inf')\n")
+        f.write("    x_max = float('-inf')\n")
+        f.write("    \n")
+        f.write("    for i_vertex in range(SU2Driver.GetNumberMarkerNodes(MarkerID)):\n")
+        f.write("      x = marker_coords(i_vertex, 0)\n")
+        f.write("      x_min = min(x_min, x)\n")
+        f.write("      x_max = max(x_max, x)\n")
+        f.write("    \n")
+        f.write("    x_range = x_max - x_min\n")
+        f.write("    \n")
+        
+        f.write("    for i_vertex in range(SU2Driver.GetNumberMarkerNodes(MarkerID)):\n")
+        f.write("      x = marker_coords(i_vertex, 0)\n")
+        f.write("      y = marker_coords(i_vertex, 1)\n") 
+        f.write("      z = marker_coords(i_vertex, 2) if nDim == 3 else 0.0\n")
+        
+        f.write("      x_norm = (x - x_min) / x_range if x_range > 0 else 0.0\n")
+        
+        f.write(f"      # User expression with x,y,z available\n")
+        f.write(f"      code = compile('{temperature_formula}', '<user-bc>', 'eval')\n")
+        f.write(f"      safe_locals = {{'x': x, 'y': y, 'z': z, 'sin': sin, 'pi': pi, 'cos': cos, 'sqrt': sqrt, 'exp': exp, 'tan': tan, 'log': log, 'abs': abs, 'fabs': fabs}}\n")
+        f.write(f"      WallTemp = eval(code, {{}}, safe_locals)\n")
+        f.write("      SU2Driver.SetMarkerCustomTemperature(MarkerID, i_vertex, WallTemp)\n")
+        f.write("    \n")
+        f.write("  \n")
+        f.write("  SU2Driver.StartSolver()\n")
+        f.write("  SU2Driver.Finalize()\n\n")
+        f.write("\nif __name__ == '__main__':\n")
+        f.write("  main()\n")
 
-    # make executable 
+    
     try:
         target_file.chmod(target_file.stat().st_mode | 0o111)
     except PermissionError:
@@ -418,43 +285,43 @@ def generate_dynamic_temperature_wrapper(
 
     log("info", f"Dynamic temperature wrapper generated at: {target_file}")
     
-    # Also generate updated config file with Python custom markers
+    
     _generate_dynamic_config_file(boundary_marker, base_temperature, output_dir)
     
     return target_file
 
 def _generate_dynamic_config_file(boundary_marker: str, base_temperature: float, output_dir: Path):
-    # Generate updated config file with Python custom boundary conditions.
+    
     try:
         config_path = output_dir / "config.cfg"
         
-        # Read existing config or create new one
+        
         config_lines = []
         if config_path.exists():
             with config_path.open("r", encoding="utf-8") as f:
                 config_lines = f.readlines()
         
-        # Check if we need to add/update markers
+        
         has_isothermal = False
         has_python_custom = False
         
         for i, line in enumerate(config_lines):
             if line.strip().startswith("MARKER_ISOTHERMAL"):
-                # Update existing isothermal marker
+                
                 config_lines[i] = f"MARKER_ISOTHERMAL= ({boundary_marker}, {base_temperature})\n"
                 has_isothermal = True
             elif line.strip().startswith("MARKER_PYTHON_CUSTOM"):
-                # Update existing python custom marker
+            
                 config_lines[i] = f"MARKER_PYTHON_CUSTOM= ({boundary_marker})\n"
                 has_python_custom = True
         
-        # Add missing markers
+        
         if not has_isothermal:
             config_lines.append(f"MARKER_ISOTHERMAL= ({boundary_marker}, {base_temperature})\n")
         if not has_python_custom:
             config_lines.append(f"MARKER_PYTHON_CUSTOM= ({boundary_marker})\n")
         
-        # Write updated config
+        
         with config_path.open("w", encoding="utf-8") as f:
             f.writelines(config_lines)
             
@@ -464,7 +331,7 @@ def _generate_dynamic_config_file(boundary_marker: str, base_temperature: float,
         log("warn", f"Could not update config file: {e}")
 
 # ----------------------------------------------------------------------
-# higher-level convenience wrapper used by the rest of the code-base
+# ----------------------------------------------------------------------
 # ----------------------------------------------------------------------
 def save_json_cfg_py_file(
         filename_json_export: str | Path,
@@ -490,7 +357,7 @@ def save_json_cfg_py_file(
     json_path = export_dir / Path(filename_json_export).with_suffix(".json")
     with json_path.open("w", encoding="utf-8") as fp:
         json.dump(state.jsonData, fp, indent=4, sort_keys=True, ensure_ascii=False)
-    log("info", f"Wrote JSON    → {json_path}")
+    log("info", f"Wrote JSON     {json_path}")
 
     # -------- CFG ---------------------------------------------------------
     cfg_path = export_dir / Path(filename_cfg_export).with_suffix(".cfg")
@@ -501,12 +368,12 @@ def save_json_cfg_py_file(
             if cfg_val is None:
                 continue
             fp.write(f"{k}= {cfg_val}\n")
-    log("info", f"Wrote .cfg    → {cfg_path}")
+    log("info", f"Wrote .cfg     {cfg_path}")
     
-    # create *.py wrapper next to them and capture the path
-    python_wrapper_path = None    # Choose which wrapper to generate based on dynamic_wall_temp_markers
+    
+    python_wrapper_path = None    
     if dynamic_wall_temp_markers:
-        # Use the dynamic temperature wrapper for airfoil marker
+        
         for marker, temp_function in dynamic_wall_temp_markers.items():
             python_wrapper_path = generate_dynamic_temperature_wrapper(
                 boundary_marker=marker,
@@ -516,8 +383,8 @@ def save_json_cfg_py_file(
                 variables=variables,
                 temperature_formula=temp_function
             )
-            break  # Only process the first marker for now
-    else:        # Use standard wrapper
+            break  
+    else:        
         python_wrapper_path = generate_python_wrapper(
             state.jsonData,
             filename_py_export=filename_py_export,
@@ -528,7 +395,7 @@ def save_json_cfg_py_file(
             config_filename=Path(filename_cfg_export).with_suffix(".cfg").name,
         )
 
-    # simple counter to help your own bookkeeping
+    
     state.counter = getattr(state, "counter", 0) + 1
     log("info", f"Export counter: {state.counter}")
     

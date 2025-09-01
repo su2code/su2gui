@@ -42,22 +42,22 @@ state.show_boundaries_dialog_card_supersonic_inlet = False
 
 # Initialize custom temperature state variables
 state.enable_custom_temperature = True
-state.custom_temperature_function = "a + b*sin(c*pi*time)"
-state.wrapper_type = "unsteady_cht"  # "unsteady_cht" or "simple"
+state.custom_temperature_function = "560.0 - 260.0*sin(x*pi / 4)"  # Position-based formula that works
+state.wrapper_type = "simple"  # Only "simple" position-based supported
 
-# Initialize user variables (a, b, c, d, e, f, g, h)
-state.var_a = 293.0  # Base temperature
-state.var_b = 57.0   # Amplitude
-state.var_c = 2.0    # Frequency multiplier
-state.var_d = 0.0    # Additional variable
-state.var_e = 0.0    # Additional variable
-state.var_f = 0.0    # Additional variable
-state.var_g = 0.0    # Additional variable
-state.var_h = 0.0    # Additional variable
+# Initialize user variables (a, b, c, d, e, f, g, h) - COMMENTED OUT FOR POSITION-BASED
+# state.var_a = 293.0  # Base temperature
+# state.var_b = 57.0   # Amplitude
+# state.var_c = 2.0    # Frequency multiplier
+# state.var_d = 0.0    # Additional variable
+# state.var_e = 0.0    # Additional variable
+# state.var_f = 0.0    # Additional variable
+# state.var_g = 0.0    # Additional variable
+# state.var_h = 0.0    # Additional variable
 
-# Initialize wrapper type options
+# Initialize wrapper type options - COMMENTED OUT UNSTEADY CHT
 state.LWrapperTypes = [
-    {"text": "Full Unsteady CHT (time-based)", "value": "unsteady_cht"},
+    # {"text": "Full Unsteady CHT (time-based)", "value": "unsteady_cht"},  # COMMENTED OUT
     {"text": "Simple Position-based", "value": "simple"}
 ]
 
@@ -256,6 +256,31 @@ def boundaries_dialog_card_inlet():
         with vuetify.VCardText():
           vuetify.VBtn("close", click=update_boundaries_dialog_card_inlet)
 
+        # Per-marker inlet types editor (arrays)
+        with vuetify.VContainer(fluid=True):
+          vuetify.VDivider()
+          vuetify.VSubheader("Per-marker inlet types")
+          # Incompressible per-marker inlet types
+          with vuetify.VContainer(fluid=True, v_if=("jsonData['SOLVER'] && jsonData['SOLVER'].includes('INC')",)):
+            with vuetify.VList(dense=True):
+              with vuetify.VListItem(v_for="(bc,i) in BCDictList.filter(b => b.bcType === 'Inlet')", key="i"):
+                with vuetify.VListItemContent():
+                  vuetify.VListItemTitle("`$${bc.bcName}`")
+                  vuetify.VListItemSubtitle("`$${bc.bc_subtype}`")
+                with vuetify.VListItemAction():
+                  vuetify.VBtn("Velocity", small=True, outlined=True, click=(ctrl.set_inlet_bc_subtype, "[bc.bcName, 'Velocity inlet']"))
+                  vuetify.VBtn("Pressure", small=True, outlined=True, classes="ml-2", click=(ctrl.set_inlet_bc_subtype, "[bc.bcName, 'Pressure inlet']"))
+          # Compressible per-marker inlet types
+          with vuetify.VContainer(fluid=True, v_if=("jsonData['SOLVER'] && !jsonData['SOLVER'].includes('INC')",)):
+            with vuetify.VList(dense=True):
+              with vuetify.VListItem(v_for="(bc,i) in BCDictList.filter(b => b.bcType === 'Inlet')", key="i"):
+                with vuetify.VListItemContent():
+                  vuetify.VListItemTitle("`$${bc.bcName}`")
+                  vuetify.VListItemSubtitle("`$${bc.bc_subtype}`")
+                with vuetify.VListItemAction():
+                  vuetify.VBtn("Total Conditions", small=True, outlined=True, click=(ctrl.set_inlet_bc_subtype, "[bc.bcName, 'Total Conditions']"))
+                  vuetify.VBtn("Mass Flow", small=True, outlined=True, classes="ml-2", click=(ctrl.set_inlet_bc_subtype, "[bc.bcName, 'Mass Flow']"))
+
 #3. define an update for the boolean to show/hide the dialog
 # switch the visibility of the popup window on/off
 def update_boundaries_dialog_card_inlet():
@@ -315,6 +340,19 @@ def boundaries_dialog_card_outlet():
         with vuetify.VCardText():
           vuetify.VBtn("close", click=update_boundaries_dialog_card_outlet)
 
+        # Per-marker outlet types editor (arrays)
+        with vuetify.VContainer(fluid=True):
+          vuetify.VDivider()
+          vuetify.VSubheader("Per-marker outlet types")
+          with vuetify.VList(dense=True):
+            with vuetify.VListItem(v_for="(bc,i) in BCDictList.filter(b => b.bcType === 'Outlet')", key="i"):
+              with vuetify.VListItemContent():
+                vuetify.VListItemTitle("`$${bc.bcName}`")
+                vuetify.VListItemSubtitle("`$${bc.bc_subtype}`")
+              with vuetify.VListItemAction():
+                vuetify.VBtn("Pressure", small=True, outlined=True, click=(ctrl.set_outlet_bc_subtype, "[bc.bcName, 'Pressure outlet']"))
+                vuetify.VBtn("Mass Flow", small=True, outlined=True, classes="ml-2", click=(ctrl.set_outlet_bc_subtype, "[bc.bcName, 'Target mass flow rate']"))
+
 #3. define an update for the boolean to show/hide the dialog
 # switch the visibility of the popup window on/off
 def update_boundaries_dialog_card_outlet():
@@ -370,103 +408,56 @@ def boundaries_dialog_card_wall():
                 dense=True,
                 classes="py-0 my-0"
               )
-            # Wrapper Type Selection (only shown when custom temperature is enabled)
-          with vuetify.VContainer(fluid=True, v_if=("enable_custom_temperature",), style_="width: 100%; max-width: 500px"):
-            with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
-              with vuetify.VCol(cols="12", classes="py-1 my-1"):
-                vuetify.VSelect(
-                  v_model=("wrapper_type", "unsteady_cht"),
-                  items=("LWrapperTypes", []),
-                  label="Python Wrapper Type",
-                  hint="Select the type of SU2 Python wrapper to generate",
-                  persistent_hint=True,
-                  dense=True,
-                  outlined=True,
-                  classes="py-0 my-0"
-                )
+            # Wrapper Type Selection COMMENTED OUT - only position-based supported
+          # with vuetify.VContainer(fluid=True, v_if=("enable_custom_temperature",), style_="width: 100%; max-width: 500px"):
+          #   with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
+          #     with vuetify.VCol(cols="12", classes="py-1 my-1"):
+          #       vuetify.VSelect(
+          #         v_model=("wrapper_type", "simple"),
+          #         items=("LWrapperTypes", []),
+          #         label="Python Wrapper Type",
+          #         hint="Select the type of SU2 Python wrapper to generate",
+          #         persistent_hint=True,
+          #         dense=True,
+          #         outlined=True,
+          #         classes="py-0 my-0"
+          #       )
             # Custom temperature function input (only shown when checkbox is enabled)
           with vuetify.VContainer(fluid=True, v_if=("enable_custom_temperature",), style_="width: 100%; max-width: 500px"):
             with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
               with vuetify.VCol(cols="12", classes="py-1 my-1"):
                 vuetify.VTextField(
-                  v_model=("custom_temperature_function", "a + b*sin(c*pi*time)"),
+                  v_model=("custom_temperature_function", "560.0 - 260.0*sin(x*pi / 4)"),
                   label="Temperature Function",
-                  hint="Use variables like a, b, c, d, etc. and 'time'",
+                  hint="Position-based formula using x,y,z coordinates. Examples: 560.0 - 260.0*sin(x*pi/4), 300 + 50*(x*y), 400 + 100*sin(x)*cos(y), 350 + 25*sqrt(x**2 + y**2)",
                   persistent_hint=True,
                   classes="py-0 my-0"
                 )
                 
-            # User-defined variables section
-            with vuetify.VRow(classes="py-1 my-1", style_="width: 100%"):
-              with vuetify.VCol(cols="12", classes="py-0 my-0"):
-                vuetify.VSubheader("User Variables (a, b, c, d...)")
-            
-            with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_a", 293.0),
-                  label="a",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_b", 57.0),
-                  label="b", 
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_c", 2.0),
-                  label="c",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_d", 0.0),
-                  label="d",                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-            
-            with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_e", 0.0),
-                  label="e",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_f", 0.0),
-                  label="f",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_g", 0.0),
-                  label="g",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
-              with vuetify.VCol(cols="3", classes="py-1 my-1"):
-                vuetify.VTextField(
-                  v_model=("var_h", 0.0),
-                  label="h",
-                  type="number",
-                  dense=True,
-                  classes="py-0 my-0"
-                )
+            # User-defined variables section - COMMENTED OUT FOR POSITION-BASED ONLY
+            # with vuetify.VRow(classes="py-1 my-1", style_="width: 100%"):
+            #   with vuetify.VCol(cols="12", classes="py-0 my-0"):
+            #     vuetify.VSubheader("User Variables (a, b, c, d...)")
+            # 
+            # with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_a", 293.0), label="a", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_b", 57.0), label="b", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_c", 2.0), label="c", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_d", 0.0), label="d", type="number", dense=True)
+            # 
+            # with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_e", 0.0), label="e", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_f", 0.0), label="f", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_g", 0.0), label="g", type="number", dense=True)
+            #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
+            #     vuetify.VTextField(v_model=("var_h", 0.0), label="h", type="number", dense=True)
             # DYNAMIC TEMPERATURE WRAPPER FILENAME SECTION
           with vuetify.VRow(classes="mt-4", v_if=("enable_custom_temperature",), style_="width: 100%"):
             with vuetify.VCol(cols="12"):
@@ -548,31 +539,30 @@ def generate_python_wrapper_with_dynamic_temp():
         # Get current temperature value and custom settings
         base_temp = getattr(state, 'boundaries_inc_temperature_idx', 300.0)
         boundary_name = state.selectedBoundaryName
-        custom_function = getattr(state, 'custom_temperature_function', "a + b*sin(c*pi*time)")
+        custom_function = getattr(state, 'custom_temperature_function', "560.0 - 260.0*sin(x*pi / 4)")
         
         log("info", f"Generating dynamic temperature wrapper for boundary '{boundary_name}'")
         log("info", f"Base temperature: {base_temp}K")
         log("info", f"Custom function: {custom_function}")
         
-        # Get user variables from the boundary card (a, b, c, d, e, f, g, h)
-        variables = {
-            'a': getattr(state, 'var_a', 293.0),
-            'b': getattr(state, 'var_b', 57.0),
-            'c': getattr(state, 'var_c', 2.0),
-            'd': getattr(state, 'var_d', 0.0),
-            'e': getattr(state, 'var_e', 0.0),
-            'f': getattr(state, 'var_f', 0.0),
-            'g': getattr(state, 'var_g', 0.0),
-            'h': getattr(state, 'var_h', 0.0),
-        }
+        # Get user variables from the boundary card - COMMENTED OUT FOR POSITION-BASED ONLY
+        # variables = {
+        #     'a': getattr(state, 'var_a', 293.0),
+        #     'b': getattr(state, 'var_b', 57.0),
+        #     'c': getattr(state, 'var_c', 2.0),
+        #     'd': getattr(state, 'var_d', 0.0),
+        #     'e': getattr(state, 'var_e', 0.0),
+        #     'f': getattr(state, 'var_f', 0.0),
+        #     'g': getattr(state, 'var_g', 0.0),
+        #     'h': getattr(state, 'var_h', 0.0),
+        # }
+        variables = {}  # No user variables for position-based
         
         log("info", f"Using variables: {variables}")
         
-        # Update JSON data to include required markers for dynamic temperature
         if not hasattr(state, 'jsonData'):
             state.jsonData = {}
             
-        # Set isothermal marker with base temperature
         state.jsonData['MARKER_ISOTHERMAL'] = [(boundary_name, base_temp)]
         
         # Set Python custom marker for dynamic control
@@ -589,7 +579,7 @@ def generate_python_wrapper_with_dynamic_temp():
             filename_py_export=getattr(state, 'python_wrapper_filename', 'run_su2_dynamic.py'),
             variables=variables,
             temperature_formula=custom_function,
-            wrapper_type=getattr(state, 'wrapper_type', 'unsteady_cht')
+            wrapper_type=getattr(state, 'wrapper_type', 'simple')  # Force simple position-based
         )
         
         # Also save the updated configuration files - import function that exists
@@ -1004,7 +994,7 @@ def update_boundaries_main(selectedBoundaryName, **kwargs):
           state.enable_custom_temperature = boundary_data.get('custom_temperature', False)
           state.custom_temperature_function = boundary_data.get(
               'temperature_function', 
-              "BASE_TEMPERATURE + AMPLITUDE * sin(pi * FREQUENCY * time)"
+              "560.0 - 260.0*sin(x*pi / 4)"
           )
           state.temperature_amplitude = boundary_data.get('temperature_amplitude', 257.0)
           state.temperature_frequency = boundary_data.get('temperature_frequency', 0.5)
@@ -1457,19 +1447,96 @@ def update_wrapper_type(wrapper_type, **kwargs):
     
     # Update default formula based on wrapper type
     if wrapper_type == "simple":
-        # Position-based formula for simple wrapper
+        # Position-based formula for simple wrapper - use the working formula
         default_formula = "560.0 - 260.0*sin(x*pi / 4)"
         state.custom_temperature_function = default_formula
         log("info", "Updated to position-based formula for simple wrapper")
-    else:
-        # Time-based formula for unsteady CHT wrapper
-        default_formula = "a + b*sin(c*pi*time)"
-        state.custom_temperature_function = default_formula
-        log("info", "Updated to time-based formula for unsteady CHT wrapper")
+    # else:
+    #     # Time-based formula commented out - not supported
+    #     default_formula = "a + b*sin(c*pi*time)"
+    #     state.custom_temperature_function = default_formula
+    #     log("info", "Updated to time-based formula for unsteady CHT wrapper")
     
     # Update the stored boundary settings
     if hasattr(state, 'selectedBoundaryIndex') and state.selectedBoundaryIndex is not None:
         state.BCDictList[state.selectedBoundaryIndex]['wrapper_type'] = wrapper_type
         state.BCDictList[state.selectedBoundaryIndex]['temperature_function'] = state.custom_temperature_function
+
+# === Per-marker subtype array helpers ===
+def _sync_inlet_type_arrays():
+  """Ensure INC_INLET_TYPE / INLET_TYPE arrays match BCDictList order for Inlet markers."""
+  try:
+    inlet_markers = [bc for bc in state.BCDictList if bc.get('bcType') == 'Inlet']
+    inc = 'INC' in str(state.jsonData.get('SOLVER', ''))
+    if inc:
+      types = state.jsonData.get('INC_INLET_TYPE', [])
+      if isinstance(types, str):
+        types = [types]
+      mapping = {
+        'Velocity inlet': 'VELOCITY_INLET',
+        'Pressure inlet': 'PRESSURE_INLET',
+        'Total Conditions': 'TOTAL_CONDITIONS',
+        'Mass Flow': 'MASS_FLOW',
+      }
+      new_types = [mapping.get(bc.get('bc_subtype'), types[0] if types else 'VELOCITY_INLET') for bc in inlet_markers]
+      state.jsonData['INC_INLET_TYPE'] = new_types
+    else:
+      types = state.jsonData.get('INLET_TYPE', [])
+      if isinstance(types, str):
+        types = [types]
+      mapping = {
+        'Total Conditions': 'TOTAL_CONDITIONS',
+        'Mass Flow': 'MASS_FLOW',
+      }
+      default = types[0] if types else 'TOTAL_CONDITIONS'
+      new_types = [mapping.get(bc.get('bc_subtype'), default) for bc in inlet_markers]
+      state.jsonData['INLET_TYPE'] = new_types
+    state.dirty('jsonData')
+  except Exception as e:
+    log('warn', f'Failed to sync inlet types: {e}')
+
+def _sync_outlet_type_arrays():
+  """Ensure INC_OUTLET_TYPE arrays match BCDictList order for Outlet markers."""
+  try:
+    outlet_markers = [bc for bc in state.BCDictList if bc.get('bcType') == 'Outlet']
+    types = state.jsonData.get('INC_OUTLET_TYPE', [])
+    if isinstance(types, str):
+      types = [types]
+    mapping = {
+      'Pressure outlet': 'PRESSURE_OUTLET',
+      'Target mass flow rate': 'MASS_FLOW_OUTLET',
+    }
+    default = types[0] if types else 'PRESSURE_OUTLET'
+    new_types = [mapping.get(bc.get('bc_subtype'), default) for bc in outlet_markers]
+    state.jsonData['INC_OUTLET_TYPE'] = new_types
+    state.dirty('jsonData')
+  except Exception as e:
+    log('warn', f'Failed to sync outlet types: {e}')
+
+def set_inlet_bc_subtype(bc_name, subtype):
+  """Set inlet subtype for a specific marker name and sync arrays."""
+  try:
+    for bc in state.BCDictList:
+      if bc.get('bcName') == bc_name and bc.get('bcType') == 'Inlet':
+        bc['bc_subtype'] = subtype
+        break
+    _sync_inlet_type_arrays()
+  except Exception as e:
+    log('warn', f'Failed to set inlet subtype: {e}')
+
+def set_outlet_bc_subtype(bc_name, subtype):
+  """Set outlet subtype for a specific marker name and sync arrays."""
+  try:
+    for bc in state.BCDictList:
+      if bc.get('bcName') == bc_name and bc.get('bcType') == 'Outlet':
+        bc['bc_subtype'] = subtype
+        break
+    _sync_outlet_type_arrays()
+  except Exception as e:
+    log('warn', f'Failed to set outlet subtype: {e}')
+
+# Register helpers on controller for UI buttons
+ctrl.set_inlet_bc_subtype = set_inlet_bc_subtype
+ctrl.set_outlet_bc_subtype = set_outlet_bc_subtype
 
 

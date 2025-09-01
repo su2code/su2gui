@@ -31,7 +31,7 @@ from core.logger import log
 # Extract state and controller from the server
 state, ctrl = server.state, server.controller
 
-state.cofig_str = ""
+state.config_str = ""
 state.config_desc = f"""%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                              %
 % SU2 configuration file                                                       %
@@ -93,8 +93,10 @@ def update_new_config_value(value, **kwargs):
 
 @state.change("config_desc")
 def update_config_desc(config_desc, **kwargs):
+    # Be defensive: ensure config_desc is a string before processing
+    text = config_desc if isinstance(config_desc, str) else str(config_desc or "")
     new_config_desc = ""
-    for line in config_desc.splitlines():
+    for line in text.splitlines():
         if not line.startswith("%"):
             line = '%' + line
         new_config_desc += line + "\n"
@@ -198,7 +200,7 @@ def config_tab():
                 )
                 
         markdown.Markdown(
-            content = ('config_str', state.confing_str), 
+            content = ('config_str', state.config_str), 
             style = "background-color: white;"
         )
 
@@ -217,9 +219,9 @@ def validate_current_config():
         is_valid = validate_config_standalone(schema_path, case_config_path)
         
         if is_valid:
-            log("info", "✅ Configuration validation successful")
+            log("info", " Configuration validation successful")
         else:
-            log("error", "❌ Configuration validation failed - check log for details")
+            log("error", " Configuration validation failed - check log for details")
         
         return is_valid
         

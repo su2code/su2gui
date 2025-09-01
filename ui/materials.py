@@ -106,10 +106,21 @@ def set_json_materials():
 
   if 'INC_DENSITY_INIT' in state.jsonData:
     state.materials_inc_density_init_idx = state.jsonData['INC_DENSITY_INIT']
+  else:
+    state.jsonData['INC_DENSITY_INIT'] = 1.2
+    state.materials_inc_density_init_idx = 1.2
+  
   if 'INC_TEMPERATURE_INIT' in state.jsonData:
     state.materials_inc_temperature_init_idx = state.jsonData['INC_TEMPERATURE_INIT']
+  else:
+    state.jsonData['INC_TEMPERATURE_INIT'] = 293.15
+    state.materials_inc_temperature_init_idx = 293.15
+  
   if 'MOLECULAR_WEIGHT' in state.jsonData:
     state.materials_molecular_weight_idx = state.jsonData['MOLECULAR_WEIGHT']
+  else:
+    state.jsonData['MOLECULAR_WEIGHT'] = 28.9647
+    state.materials_molecular_weight_idx = 28.9647
 
   # # set fluid viscosity
   if 'MU_CONSTANT' in state.jsonData:
@@ -786,14 +797,30 @@ def update_material(materials_conductivity_idx, **kwargs):
 def computePressure():
   #update thermodynamic pressure for displaying in the dialog
   try:
+    # Ensure all required keys exist and have valid values
+    if 'INC_DENSITY_INIT' not in state.jsonData:
+      state.jsonData['INC_DENSITY_INIT'] = 1.2
+    if 'INC_TEMPERATURE_INIT' not in state.jsonData:
+      state.jsonData['INC_TEMPERATURE_INIT'] = 293.15
+    if 'MOLECULAR_WEIGHT' not in state.jsonData:
+      state.jsonData['MOLECULAR_WEIGHT'] = 28.9647
+    
     rho = float(state.jsonData['INC_DENSITY_INIT'])
     T = float(state.jsonData['INC_TEMPERATURE_INIT'])
     M = float(state.jsonData['MOLECULAR_WEIGHT'])
+    
+    # Check for valid values
+    if rho <= 0 or T <= 0 or M <= 0:
+      log("warn", "Invalid values for density, temperature, or molecular weight in computePressure")
+      return
+    
     R = float(UNIVERSAL_GAS_CONSTANT / (M/1000.0))
-
-    state.jsonData['THERMODYNAMIC_PRESSURE']= round(rho*R*T,2)
+    state.jsonData['THERMODYNAMIC_PRESSURE'] = round(rho*R*T, 2)
+    
+  except (ValueError, TypeError) as e:
+    log("warn", f'Unable to set THERMODYNAMIC_PRESSURE due to invalid numeric value: {e}')
   except Exception as e:
-    log("warn",f'Unable to set THERMODYNAMIC_PRESSURE due to incorrect value for {e} in Materials Tab')
+    log("warn", f'Unable to set THERMODYNAMIC_PRESSURE due to unexpected error: {e}')
 
 ###############################################################
 # Materials - fluid model options

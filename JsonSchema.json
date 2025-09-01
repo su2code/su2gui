@@ -39,12 +39,16 @@
       "type": "string",
       "enum": [
         "NONE",
+        "NO_TURB_MODEL",
         "SA",
         "SA_NEG",
         "SST",
-        "SST_SUST"
+        "SST_SUST",
+        "KW",
+        "KW_GZETA",
+        "KW_WILCOX"
       ],
-      "description": "Specify turbulence model (options from Turb_Model_Map). Default: NO_TURB_MODEL:contentReference[oaicite:3]{index=3}",
+      "description": "Specify turbulence model with complete enumeration. Default: NO_TURB_MODEL",
       "default": "NO_TURB_MODEL"
     },
     "KIND_TRANS_MODEL": {
@@ -80,7 +84,7 @@
         "US",
         "KGM2"
       ],
-      "description": "System of measurements (options from Measurements_Map). Default: SI:contentReference[oaicite:6]{index=6}",
+      "description": "SU2 option: SYSTEM_MEASUREMENTS",
       "default": "SI"
     },
     "FLUID_MODEL": {
@@ -96,20 +100,191 @@
         "MUTATIONPP",
         "SU2_NONEQ"
       ],
-      "description": "Fluid model (options from FluidModel_Map). Default: STANDARD_AIR:contentReference[oaicite:7]{index=7}",
+      "description": "SU2 option: FLUID_MODEL",
       "default": "STANDARD_AIR"
+    },
+    "FLUID_NAME": {
+      "type": "string",
+      "description": "SU2 option: FLUID_NAME",
+      "default": "nitrogen"
+    },
+    "INTERPOLATION_METHOD": {
+      "type": "string",
+      "description": "SU2 option: INTERPOLATION_METHOD",
+      "default": "ENUM_DATADRIVEN_METHOD::LUT"
+    },
+    "FILENAMES_INTERPOLATOR": {
+      "type": "array",
+      "description": "SU2 option: FILENAMES_INTERPOLATOR",
+      "items": {
+        "type": "string"
+      }
+    },
+    "DATADRIVEN_NEWTON_RELAXATION": {
+      "type": "number",
+      "description": "SU2 option: DATADRIVEN_NEWTON_RELAXATION",
+      "default": 1.0
+    },
+    "DATADRIVEN_INITIAL_DENSITY": {
+      "type": "number",
+      "description": "SU2 option: DATADRIVEN_INITIAL_DENSITY",
+      "default": -1.0
+    },
+    "DATADRIVEN_INITIAL_ENERGY": {
+      "type": "number",
+      "description": "SU2 option: DATADRIVEN_INITIAL_ENERGY",
+      "default": -1.0
+    },
+    "USE_PINN": {
+      "type": "boolean",
+      "description": "SU2 option: USE_PINN",
+      "default": false
+    },
+    "CONFINEMENT_PARAM": {
+      "type": "number",
+      "description": "SU2 option: CONFINEMENT_PARAM",
+      "default": 0.0
     },
     "GAS_CONSTANT": {
       "type": "number",
-      "description": "Specific gas constant (J/kg*K)",
+      "description": "SU2 option: GAS_CONSTANT",
       "default": 287.058,
       "minimum": 0
     },
     "GAMMA_VALUE": {
       "type": "number",
-      "description": "Ratio of specific heats",
+      "description": "SU2 option: GAMMA_VALUE",
       "default": 1.4,
       "minimum": 1.0
+    },
+    "THERMODYNAMIC_PRESSURE": {
+      "type": "number",
+      "description": "SU2 option: THERMODYNAMIC_PRESSURE",
+      "default": 101325.0
+    },
+    "SPECIFIC_HEAT_CP": {
+      "type": "array",
+      "description": "Specific heat at constant pressure for each species. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "THERMAL_EXPANSION_COEFF": {
+      "type": "number",
+      "description": "SU2 option: THERMAL_EXPANSION_COEFF",
+      "default": 0.00347
+    },
+    "MOLECULAR_WEIGHT": {
+      "oneOf": [
+      {
+        "type": "number",
+        "description": "Molecular weight for all species (single value applied to all species)",
+        "minimum": 0
+      },
+      {
+        "type": "array",
+        "description": "Molecular weight for each species. Variable-length array based on number of species.",
+        "items": {
+        "type": "number",
+        "minimum": 0
+        }
+      }
+      ]
+    },
+    "GAS_MODEL": {
+      "type": "string",
+      "description": "SU2 option: GAS_MODEL",
+      "default": "N2"
+    },
+    "TRANSPORT_COEFF_MODEL": {
+      "type": "string",
+      "description": "SU2 option: TRANSPORT_COEFF_MODEL",
+      "default": "TRANSCOEFFMODEL::WILKE"
+    },
+    "GAS_COMPOSITION": {
+      "type": "array",
+      "description": "Gas composition for each species. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "INLET_GAS_COMPOSITION": {
+      "type": "array",
+      "description": "Inlet gas composition for each species. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "INLET_TEMPERATURE_VE": {
+      "type": "number",
+      "description": "SU2 option: INLET_TEMPERATURE_VE",
+      "default": 0.0
+    },
+    "FROZEN_MIXTURE": {
+      "type": "boolean",
+      "description": "SU2 option: FROZEN_MIXTURE",
+      "default": false
+    },
+    "IONIZATION": {
+      "type": "boolean",
+      "description": "SU2 option: IONIZATION",
+      "default": false
+    },
+    "VT_RESIDUAL_LIMITING": {
+      "type": "boolean",
+      "description": "SU2 option: VT_RESIDUAL_LIMITING",
+      "default": false
+    },
+    "CATALYTIC_WALL": {
+      "type": "array",
+      "description": "SU2 option: CATALYTIC_WALL",
+      "items": {
+        "type": "string"
+      }
+    },
+    "SUPERCATALYTIC_WALL": {
+      "type": "boolean",
+      "description": "SU2 option: SUPERCATALYTIC_WALL",
+      "default": false
+    },
+    "SUPERCATALYTIC_WALL_COMPOSITION": {
+      "type": "array",
+      "description": "Supercatalytic wall composition for each species. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "CATALYTIC_EFFICIENCY": {
+      "type": "number",
+      "description": "SU2 option: CATALYTIC_EFFICIENCY",
+      "default": 1.0
+    },
+    "CRITICAL_TEMPERATURE": {
+      "type": "number",
+      "description": "SU2 option: CRITICAL_TEMPERATURE",
+      "default": 131.0
+    },
+    "CRITICAL_PRESSURE": {
+      "type": "number",
+      "description": "SU2 option: CRITICAL_PRESSURE",
+      "default": 3588550.0
+    },
+    "CRITICAL_DENSITY": {
+      "type": "number",
+      "description": "SU2 option: CRITICAL_DENSITY",
+      "default": 263.0
+    },
+    "ACENTRIC_FACTOR": {
+      "type": "number",
+      "description": "SU2 option: ACENTRIC_FACTOR",
+      "default": 0.035
     },
     "VISCOSITY_MODEL": {
       "type": "string",
@@ -118,8 +293,122 @@
         "SUTHERLAND",
         "TRANSPORT_VISCOSITY"
       ],
-      "description": "Model of the viscosity (options from ViscosityModel_Map). Default: SUTHERLAND:contentReference[oaicite:10]{index=10}",
+      "description": "SU2 option: VISCOSITY_MODEL",
       "default": "SUTHERLAND"
+    },
+    "MU_CONSTANT": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "description": "SU2 option: MU_CONSTANT"
+    },
+    "MU_REF": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "description": "SU2 option: MU_REF"
+    },
+    "MU_T_REF": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "description": "SU2 option: MU_T_REF"
+    },
+    "SUTHERLAND_CONSTANT": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "description": "SU2 option: SUTHERLAND_CONSTANT"
+    },
+    "MIXING_VISCOSITY_MODEL": {
+      "type": "string",
+      "enum": [
+        "DAVIDSON",
+        "OTHER"
+      ],
+      "description": "SU2 option: MIXING_VISCOSITY_MODEL",
+      "default": "DAVIDSON"
+    },
+    "CONDUCTIVITY_MODEL": {
+      "oneOf": [
+      {
+        "type": "string",
+        "enum": [
+          "CONSTANT_PRANDTL",
+          "CONSTANT_CONDUCTIVITY",
+          "NONE"
+        ],
+        "description": "SU2 option: CONDUCTIVITY_MODEL",
+        "default": "CONSTANT_PRANDTL"
+      },
+      {
+        "type": "array",
+        "items": {
+        "type": "string",
+        "enum": [
+          "CONSTANT_PRANDTL",
+          "CONSTANT_CONDUCTIVITY",
+          "NONE"
+        ]
+        },
+        "description": "SU2 option: CONDUCTIVITY_MODEL (array form)"
+      }
+      ]
+    },
+    "TURBULENT_CONDUCTIVITY_MODEL": {
+      "type": "string",
+      "enum": [
+        "CONSTANT_PRANDTL",
+        "CONSTANT_PRANDTL_TURB"
+      ],
+      "description": "SU2 option: TURBULENT_CONDUCTIVITY_MODEL",
+      "default": "CONSTANT_PRANDTL"
+    },
+    "THERMAL_CONDUCTIVITY_CONSTANT": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
+      "description": "SU2 option: THERMAL_CONDUCTIVITY_CONSTANT"
     },
     "REYNOLDS_NUMBER": {
       "type": "number",
@@ -134,16 +423,46 @@
       "minimum": 0
     },
     "PRANDTL_LAM": {
-      "type": "number",
-      "description": "Laminar Prandtl number",
-      "default": 0.72,
-      "minimum": 0
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Laminar Prandtl number (single value applied to all species)",
+          "minimum": 0,
+          "default": 0.72
+        },
+        {
+          "type": "array",
+          "description": "Laminar Prandtl number for each species. Variable-length array based on number of species + 1.",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "default": [
+            0.72
+          ]
+        }
+      ]
     },
     "PRANDTL_TURB": {
-      "type": "number",
-      "description": "Turbulent Prandtl number",
-      "default": 0.9,
-      "minimum": 0
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Turbulent Prandtl number (single value applied to all species)",
+          "minimum": 0,
+          "default": 0.9
+        },
+        {
+          "type": "array",
+          "description": "Turbulent Prandtl number for each species. Variable-length array based on number of species + 1.",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          },
+          "default": [
+            0.9
+          ]
+        }
+      ]
     },
     "BULK_MODULUS": {
       "type": "number",
@@ -209,19 +528,49 @@
       "default": 0.0
     },
     "REF_ORIGIN_MOMENT_X": {
-      "type": "number",
-      "description": "X reference origin for moment computation:contentReference[oaicite:24]{index=24}",
-      "default": 0.0
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Single X reference origin for moment computation (applied to all markers)"
+        },
+        {
+          "type": "array",
+          "description": "X Reference origin for moment computation. Variable-length array matching number of monitoring markers.",
+          "items": {
+            "type": "number"
+          }
+        }
+      ]
     },
     "REF_ORIGIN_MOMENT_Y": {
-      "type": "number",
-      "description": "Y reference origin for moment computation:contentReference[oaicite:25]{index=25}",
-      "default": 0.0
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Single Y reference origin for moment computation (applied to all markers)"
+        },
+        {
+          "type": "array",
+          "description": "Y Reference origin for moment computation. Variable-length array matching number of monitoring markers.",
+          "items": {
+            "type": "number"
+          }
+        }
+      ]
     },
     "REF_ORIGIN_MOMENT_Z": {
-      "type": "number",
-      "description": "Z reference origin for moment computation:contentReference[oaicite:26]{index=26}",
-      "default": 0.0
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Single Z reference origin for moment computation (applied to all markers)"
+        },
+        {
+          "type": "array",
+          "description": "Z Reference origin for moment computation. Variable-length array matching number of monitoring markers.",
+          "items": {
+            "type": "number"
+          }
+        }
+      ]
     },
     "REF_AREA": {
       "type": "number",
@@ -390,18 +739,48 @@
       "default": "TOTAL_CONDITIONS"
     },
     "MARKER_INLET": {
-      "type": "array",
-      "items": {
-        "oneOf": [
-          {
-            "type": "string"
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single inlet marker definition: [marker_name, total_temperature, total_pressure, flow_dir_x, flow_dir_y, flow_dir_z]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Total temperature, total pressure, or flow direction component"
+              }
+            ]
           },
-          {
-            "type": "number"
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "description": "Multiple inlet markers, each with definition: [marker_name, total_temperature, total_pressure, flow_dir_x, flow_dir_y, flow_dir_z]",
+          "items": {
+            "type": "array",
+            "description": "Single inlet marker definition",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Total temperature, total pressure, or flow direction component"
+                }
+              ]
+            },
+            "minItems": 6,
+            "maxItems": 6
           }
-        ]
-      },
-      "description": "Inlet boundary marker(s) with format depending on INLET_TYPE"
+        }
+      ]
     },
     "MARKER_RIEMANN": {
       "type": "array",
@@ -434,11 +813,48 @@
       "description": "Boundary marker(s) where mixing plane is applied:contentReference[oaicite:55]{index=55}"
     },
     "MARKER_SUPERSONIC_INLET": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Supersonic inlet marker(s) (format: marker, T, p, u, v, w):contentReference[oaicite:56]{index=56}"
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single supersonic inlet marker definition: [marker_name, temperature, pressure, velocity_x, velocity_y, velocity_z]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Temperature, pressure, or velocity component"
+              }
+            ]
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "description": "Multiple supersonic inlet markers, each with definition: [marker_name, temperature, pressure, velocity_x, velocity_y, velocity_z]",
+          "items": {
+            "type": "array",
+            "description": "Single supersonic inlet marker definition",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Temperature, pressure, or velocity component"
+                }
+              ]
+            },
+            "minItems": 6,
+            "maxItems": 6
+          }
+        }
+      ]
     },
     "MARKER_SUPERSONIC_OUTLET": {
       "type": "array",
@@ -448,18 +864,46 @@
       "description": "Supersonic outlet marker(s) (format: marker, etc.):contentReference[oaicite:57]{index=57}"
     },
     "MARKER_OUTLET": {
-      "type": "array",
-      "items": {
-        "oneOf": [
-          {
-            "type": "string"
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single outlet marker definition with variable number of parameters",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Pressure or other outlet parameter"
+              }
+            ]
           },
-          {
-            "type": "number"
+          "minItems": 2
+        },
+        {
+          "type": "array",
+          "description": "Multiple outlet markers, each with variable parameters",
+          "items": {
+            "type": "array",
+            "description": "Single outlet marker definition",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Pressure or other outlet parameter"
+                }
+              ]
+            },
+            "minItems": 2
           }
-        ]
-      },
-      "description": "Outlet boundary marker(s) with format: (marker, back pressure, ...)"
+        }
+      ]
     },
     "MARKER_ISOTHERMAL": {
       "type": "array",
@@ -604,8 +1048,9 @@
     },
     "MGLEVEL": {
       "type": "integer",
-      "description": "Multigrid levels. Default: 0:contentReference[oaicite:75]{index=75}",
-      "default": 0
+      "description": "Multigrid levels. Default: 0",
+      "default": 0,
+      "minimum": 0
     },
     "MGCYCLE": {
       "type": "string",
@@ -618,18 +1063,54 @@
       "default": "V_CYCLE"
     },
     "MG_PRE_SMOOTH": {
-      "type": "integer",
-      "description": "Multigrid pre-smoothing level",
+      "oneOf": [
+        {
+          "type": "integer",
+          "description": "Single multigrid pre-smoothing level"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Array of multigrid pre-smoothing levels for each multigrid level"
+        }
+      ],
+      "description": "Multigrid pre-smoothing level (can be integer or array of integers)",
       "default": 0
     },
     "MG_POST_SMOOTH": {
-      "type": "integer",
-      "description": "Multigrid post-smoothing level",
+      "oneOf": [
+        {
+          "type": "integer",
+          "description": "Single multigrid post-smoothing level"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Array of multigrid post-smoothing levels for each multigrid level"
+        }
+      ],
+      "description": "Multigrid post-smoothing level (can be integer or array of integers)",
       "default": 0
     },
     "MG_CORRECTION_SMOOTH": {
-      "type": "integer",
-      "description": "Jacobi smoothing of multigrid correction",
+      "oneOf": [
+        {
+          "type": "integer",
+          "description": "Single Jacobi smoothing level for multigrid correction"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "Array of Jacobi smoothing levels for multigrid correction at each level"
+        }
+      ],
+      "description": "Jacobi smoothing of multigrid correction (can be integer or array of integers)",
       "default": 0
     },
     "MG_DAMP_RESTRICTION": {
@@ -645,12 +1126,23 @@
     "NUM_METHOD_GRAD": {
       "type": "string",
       "enum": [
-        "GAUSS_GREEN",
+        "GREEN_GAUSS",
         "LEAST_SQUARES",
         "WEIGHTED_LEAST_SQUARES"
       ],
-      "description": "Numerical method for spatial gradients (options from Gradient_Map). Default: WEIGHTED_LEAST_SQUARES:contentReference[oaicite:79]{index=79}",
+      "description": "Numerical method for spatial gradients (options from Gradient_Map). Default: WEIGHTED_LEAST_SQUARES",
       "default": "WEIGHTED_LEAST_SQUARES"
+    },
+    "NUM_METHOD_GRAD_RECON": {
+      "type": "string",
+      "enum": [
+        "GREEN_GAUSS",
+        "LEAST_SQUARES",
+        "WEIGHTED_LEAST_SQUARES",
+        "NO_GRADIENT"
+      ],
+      "description": "Numerical method for spatial gradients used only for upwind reconstruction (options from Gradient_Map). Default: NO_GRADIENT",
+      "default": "NO_GRADIENT"
     },
     "LIMITER_COEFF": {
       "type": "number",
@@ -669,21 +1161,6 @@
     },
     "CONV_NUM_METHOD_FLOW": {
       "type": "string",
-      "enum": [
-        "JST",
-        "LAX-FRIEDRICH",
-        "CUSP",
-        "ROE",
-        "AUSM",
-        "HLLC",
-        "TURKEL_PREC",
-        "MSW",
-        "FDS",
-        "SLAU",
-        "SLAU2",
-        "L2ROE",
-        "LMROE"
-      ],
       "description": "Convective numerical method for flow (options from Upwind_Map/Centered_Map):contentReference[oaicite:83]{index=83}"
     },
     "SPATIAL_ORDER_FLOW": {
@@ -692,42 +1169,63 @@
     },
     "SOLVER": {
       "type": "string",
-      "description": "SU2 option: SOLVER",
-      "default": "MAIN_SOLVER::NONE",
       "enum": [
+        "NONE",
         "EULER",
         "NAVIER_STOKES",
         "RANS",
         "INC_EULER",
         "INC_NAVIER_STOKES",
         "INC_RANS",
+        "HEAT_EQUATION",
         "FEM_EULER",
         "FEM_NAVIER_STOKES",
         "FEM_RANS",
         "FEM_LES",
-        "HEAT_EQUATION",
         "FEM_ELASTICITY",
         "DISC_ADJ_EULER",
         "DISC_ADJ_NAVIER_STOKES",
         "DISC_ADJ_RANS",
         "DISC_ADJ_INC_EULER",
         "DISC_ADJ_INC_NAVIER_STOKES",
-        "DISC_ADJ_INC_RANS"
-      ]
+        "DISC_ADJ_INC_RANS",
+        "DISC_ADJ_HEAT",
+        "DISC_ADJ_FEM_EULER",
+        "DISC_ADJ_FEM_NS",
+        "DISC_ADJ_FEM_RANS",
+        "MULTIPHYSICS",
+        "MAIN_SOLVER::NONE",
+        "MAIN_SOLVER::EULER",
+        "MAIN_SOLVER::NAVIER_STOKES",
+        "MAIN_SOLVER::RANS",
+        "MAIN_SOLVER::INC_EULER",
+        "MAIN_SOLVER::INC_NAVIER_STOKES",
+        "MAIN_SOLVER::INC_RANS",
+        "MAIN_SOLVER::HEAT_EQUATION",
+        "MAIN_SOLVER::FEM_EULER",
+        "MAIN_SOLVER::FEM_NAVIER_STOKES",
+        "MAIN_SOLVER::FEM_RANS",
+        "MAIN_SOLVER::FEM_LES",
+        "MAIN_SOLVER::FEM_ELASTICITY",
+        "MAIN_SOLVER::DISC_ADJ_EULER",
+        "MAIN_SOLVER::DISC_ADJ_NAVIER_STOKES",
+        "MAIN_SOLVER::DISC_ADJ_RANS",
+        "MAIN_SOLVER::DISC_ADJ_INC_EULER",
+        "MAIN_SOLVER::DISC_ADJ_INC_NAVIER_STOKES",
+        "MAIN_SOLVER::DISC_ADJ_INC_RANS",
+        "MAIN_SOLVER::DISC_ADJ_HEAT",
+        "MAIN_SOLVER::DISC_ADJ_FEM_EULER",
+        "MAIN_SOLVER::DISC_ADJ_FEM_NS",
+        "MAIN_SOLVER::DISC_ADJ_FEM_RANS",
+        "MAIN_SOLVER::MULTIPHYSICS"
+      ],
+      "description": "SU2 solver type including FEM and discrete adjoint variants",
+      "default": "EULER"
     },
     "MULTIZONE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
+      "type": "boolean",
       "description": "SU2 option: MULTIZONE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
+      "default": false
     },
     "MULTIZONE_SOLVER": {
       "type": "string",
@@ -735,29 +1233,53 @@
       "default": "ENUM_MULTIZONE::MZ_BLOCK_GAUSS_SEIDEL"
     },
     "SST_OPTIONS": {
-      "type": "array",
-      "description": "SU2 option: SST_OPTIONS",
-      "items": {
-        "type": "string"
-      }
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "SU2 option: SST_OPTIONS"
     },
     "SA_OPTIONS": {
-      "type": "array",
-      "description": "SU2 option: SA_OPTIONS",
-      "items": {
-        "type": "string"
-      }
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "SU2 option: SA_OPTIONS"
     },
     "LM_OPTIONS": {
-      "type": "array",
-      "description": "SU2 option: LM_OPTIONS",
-      "items": {
+      "oneOf": [
+      {
+        "type": "string",
+        "description": "SU2 option: LM_OPTIONS (single string value)"
+      },
+      {
+        "type": "array",
+        "description": "SU2 option: LM_OPTIONS (array of strings)",
+        "items": {
         "type": "string"
+        }
       }
+      ]
+    }
     },
     "HROUGHNESS": {
       "type": "number",
-      "description": "KIND_SCALAR_MODEL \\n DESCRIPTION: Specify scalar transport model \\n Options: see \\link Scalar_Model_Map \\endlink \\n DEFAULT: NONE \\ingroup Config"
+      "description": "KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \\link Scalar_Model_Map \\endlink \n DEFAULT: NONE \\ingroup Config",
+      "default": 1e-06
     },
     "KIND_SCALAR_MODEL": {
       "type": "string",
@@ -790,51 +1312,19 @@
       "default": false
     },
     "AXISYMMETRIC": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: AXISYMMETRIC",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
+      "type": "boolean",
+      "description": "Axisymmetric simulation. Default: false",
+      "default": false
     },
     "GRAVITY_FORCE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: GRAVITY_FORCE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "VORTICITY_CONFINEMENT": {
       "type": "boolean",
-      "description": "SU2 option: VORTICITY_CONFINEMENT",
+      "description": "SU2 option: GRAVITY_FORCE",
       "default": false
     },
     "BODY_FORCE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
+      "type": "boolean",
       "description": "SU2 option: BODY_FORCE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
+      "default": false
     },
     "BODY_FORCE_VECTOR": {
       "type": "array",
@@ -851,1843 +1341,49 @@
       "default": "ENUM_STREAMWISE_PERIODIC::NONE"
     },
     "STREAMWISE_PERIODIC_TEMPERATURE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
+      "type": "number",
       "description": "SU2 option: STREAMWISE_PERIODIC_TEMPERATURE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
+      "default": 0.0
     },
     "STREAMWISE_PERIODIC_OUTLET_HEAT": {
       "type": "number",
-      "description": "SU2 option: STREAMWISE_PERIODIC_OUTLET_HEAT"
+      "description": "SU2 option: STREAMWISE_PERIODIC_OUTLET_HEAT",
+      "default": 0.0
     },
     "STREAMWISE_PERIODIC_PRESSURE_DROP": {
       "type": "number",
-      "description": "SU2 option: STREAMWISE_PERIODIC_PRESSURE_DROP"
+      "description": "SU2 option: STREAMWISE_PERIODIC_PRESSURE_DROP",
+      "default": 0.0
     },
     "STREAMWISE_PERIODIC_MASSFLOW": {
       "type": "number",
-      "description": "RESTART_SOL \\n DESCRIPTION: Restart solution from native solution file \\n Options: NO, YES \\ingroup Config"
-    },
-    "WRT_RESTART_COMPACT": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: WRT_RESTART_COMPACT",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "READ_BINARY_RESTART": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: READ_BINARY_RESTART",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "WRT_RESTART_OVERWRITE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: WRT_RESTART_OVERWRITE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "WRT_SURFACE_OVERWRITE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: WRT_SURFACE_OVERWRITE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "WRT_VOLUME_OVERWRITE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: WRT_VOLUME_OVERWRITE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "FLUID_NAME": {
-      "type": "string",
-      "description": "SU2 option: FLUID_NAME"
-    },
-    "INTERPOLATION_METHOD": {
-      "type": "string",
-      "description": "SU2 option: INTERPOLATION_METHOD",
-      "default": "ENUM_DATADRIVEN_METHOD::LUT"
-    },
-    "FILENAMES_INTERPOLATOR": {
-      "type": "array",
-      "description": "SU2 option: FILENAMES_INTERPOLATOR",
-      "items": {
-        "type": "string"
-      }
-    },
-    "DATADRIVEN_NEWTON_RELAXATION": {
-      "type": "number",
-      "description": "DATADRIVEN_INITIAL_DENSITY \\n DESCRIPTION: Optional initial value for fluid density used for the Newton solver processes in the data-driven fluid model."
-    },
-    "DATADRIVEN_INITIAL_DENSITY": {
-      "type": "number",
-      "description": "DATADRIVEN_INITIAL_ENERGY \\n DESCRIPTION: Optional initial value for fluid static energy used for the Newton solver processes in the data-driven fluid model."
-    },
-    "DATADRIVEN_INITIAL_ENERGY": {
-      "type": "number",
-      "description": "SU2 option: DATADRIVEN_INITIAL_ENERGY"
-    },
-    "USE_PINN": {
-      "type": "boolean",
-      "description": "SU2 option: USE_PINN",
-      "default": false
-    },
-    "CONFINEMENT_PARAM": {
-      "type": "number",
-      "description": "SU2 option: CONFINEMENT_PARAM"
-    },
-    "THERMODYNAMIC_PRESSURE": {
-      "type": "number",
-      "description": "SU2 option: THERMODYNAMIC_PRESSURE"
-    },
-    "SPECIFIC_HEAT_CP": {
-      "type": "array",
-      "description": "SU2 option: SPECIFIC_HEAT_CP",
-      "items": {
-        "type": "number"
-      }
-    },
-    "THERMAL_EXPANSION_COEFF": {
-      "type": "number",
-      "description": "MOLECULAR_WEIGHT \\n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \\ingroup Config"
-    },
-    "MOLECULAR_WEIGHT": {
-      "type": "array",
-      "description": "SU2 option: MOLECULAR_WEIGHT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "GAS_MODEL": {
-      "type": "string",
-      "description": "SU2 option: GAS_MODEL"
-    },
-    "TRANSPORT_COEFF_MODEL": {
-      "type": "string",
-      "description": "SU2 option: TRANSPORT_COEFF_MODEL",
-      "default": "TRANSCOEFFMODEL::WILKE"
-    },
-    "GAS_COMPOSITION": {
-      "type": "array",
-      "description": "SU2 option: GAS_COMPOSITION",
-      "items": {
-        "type": "number"
-      }
-    },
-    "INLET_GAS_COMPOSITION": {
-      "type": "array",
-      "description": "SU2 option: INLET_GAS_COMPOSITION",
-      "items": {
-        "type": "number"
-      }
-    },
-    "INLET_TEMPERATURE_VE": {
-      "type": "number",
-      "description": "SU2 option: INLET_TEMPERATURE_VE"
-    },
-    "FROZEN_MIXTURE": {
-      "type": "boolean",
-      "description": "SU2 option: FROZEN_MIXTURE",
-      "default": false
-    },
-    "IONIZATION": {
-      "type": "boolean",
-      "description": "SU2 option: IONIZATION",
-      "default": false
-    },
-    "VT_RESIDUAL_LIMITING": {
-      "type": "boolean",
-      "description": "SU2 option: VT_RESIDUAL_LIMITING",
-      "default": false
-    },
-    "CATALYTIC_WALL": {
-      "type": "array",
-      "description": "SU2 option: CATALYTIC_WALL",
-      "items": {
-        "type": "string"
-      }
-    },
-    "SUPERCATALYTIC_WALL": {
-      "type": "boolean",
-      "description": "SU2 option: SUPERCATALYTIC_WALL",
-      "default": false
-    },
-    "SUPERCATALYTIC_WALL_COMPOSITION": {
-      "type": "array",
-      "description": "SU2 option: SUPERCATALYTIC_WALL_COMPOSITION",
-      "items": {
-        "type": "number"
-      }
-    },
-    "CATALYTIC_EFFICIENCY": {
-      "type": "number",
-      "description": "MARKER_MONITORING\\n DESCRIPTION: Marker(s) of the surface where evaluate the non-dimensional coefficients \\ingroup Config"
-    },
-    "CRITICAL_TEMPERATURE": {
-      "type": "number",
-      "description": "SU2 option: CRITICAL_TEMPERATURE"
-    },
-    "CRITICAL_PRESSURE": {
-      "type": "number",
-      "description": "SU2 option: CRITICAL_PRESSURE"
-    },
-    "CRITICAL_DENSITY": {
-      "type": "number",
-      "description": "SU2 option: CRITICAL_DENSITY"
-    },
-    "ACENTRIC_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: ACENTRIC_FACTOR"
-    },
-    "MU_CONSTANT": {
-      "type": "array",
-      "description": "SU2 option: MU_CONSTANT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "MU_REF": {
-      "type": "array",
-      "description": "SU2 option: MU_REF",
-      "items": {
-        "type": "number"
-      }
-    },
-    "MU_T_REF": {
-      "type": "array",
-      "description": "SU2 option: MU_T_REF",
-      "items": {
-        "type": "number"
-      }
-    },
-    "SUTHERLAND_CONSTANT": {
-      "type": "array",
-      "description": "SU2 option: SUTHERLAND_CONSTANT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "MIXING_VISCOSITY_MODEL": {
-      "type": "string",
-      "description": "SU2 option: MIXING_VISCOSITY_MODEL",
-      "default": "MIXINGVISCOSITYMODEL::DAVIDSON"
-    },
-    "CONDUCTIVITY_MODEL": {
-      "type": "string",
-      "description": "SU2 option: CONDUCTIVITY_MODEL",
-      "default": "CONDUCTIVITYMODEL::CONSTANT_PRANDTL",
-      "enum": [
-        "CONSTANT_CONDUCTIVITY",
-        "CONSTANT_PRANDTL",
-        "POLYNOMIAL_CONDUCTIVITY"
-      ]
-    },
-    "TURBULENT_CONDUCTIVITY_MODEL": {
-      "type": "string",
-      "description": "SU2 option: TURBULENT_CONDUCTIVITY_MODEL",
-      "default": "CONDUCTIVITYMODEL_TURB::CONSTANT_PRANDTL"
-    },
-    "THERMAL_CONDUCTIVITY_CONSTANT": {
-      "type": "array",
-      "description": "SU2 option: THERMAL_CONDUCTIVITY_CONSTANT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "CP_POLYCOEFFS": {
-      "type": "array",
-      "description": "SU2 option: CP_POLYCOEFFS",
-      "items": {
-        "type": "number"
-      }
-    },
-    "MU_POLYCOEFFS": {
-      "type": "array",
-      "description": "SU2 option: MU_POLYCOEFFS",
-      "items": {
-        "type": "number"
-      }
-    },
-    "KT_POLYCOEFFS": {
-      "type": "array",
-      "description": "SU2 option: KT_POLYCOEFFS",
-      "items": {
-        "type": "number"
-      }
-    },
-    "WALLMODEL_KAPPA": {
-      "type": "number",
-      "description": "WALLMODEL_MAXITER \\n DESCRIPTION: Max iterations used for the wall model \\n DEFAULT 200 \\ingroup Config"
-    },
-    "WALLMODEL_MAXITER": {
-      "type": "string",
-      "description": "SU2 option: WALLMODEL_MAXITER"
-    },
-    "WALLMODEL_RELFAC": {
-      "type": "number",
-      "description": "WALLMODEL_MINYPLUS \\n DESCRIPTION: lower limit for Y+ used for the wall model \\n DEFAULT 5.0 \\ingroup Config"
-    },
-    "WALLMODEL_MINYPLUS": {
-      "type": "number",
-      "description": "WALLMODEL_B \\n DESCRIPTION: constant B used for the wall model \\n DEFAULT 5.5 \\ingroup Config"
-    },
-    "WALLMODEL_B": {
-      "type": "number",
-      "description": "BULK_MODULUS \\n DESCRIPTION: Value of the Bulk Modulus  \\n DEFAULT 1.42E5 \\ingroup Config"
-    },
-    "BETA_FACTOR": {
-      "type": "number",
-      "description": "MACH_NUMBER  \\n DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \\ingroup Config"
-    },
-    "FREESTREAM_OPTION": {
-      "type": "string",
-      "description": "SU2 option: FREESTREAM_OPTION",
-      "default": "FREESTREAM_OPTION::TEMPERATURE_FS"
-    },
-    "INC_DENSITY_MODEL": {
-      "type": "string",
-      "description": "SU2 option: INC_DENSITY_MODEL",
-      "default": "INC_DENSITYMODEL::CONSTANT"
-    },
-    "INC_ENERGY_EQUATION": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: INC_ENERGY_EQUATION",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "INC_DENSITY_REF": {
-      "type": "number",
-      "description": "INC_VELOCITY_REF \\n DESCRIPTION: Reference velocity for incompressible flows (1.0 by default) \\ingroup Config"
-    },
-    "INC_VELOCITY_REF": {
-      "type": "number",
-      "description": "INC_TEMPERATURE_REF \\n DESCRIPTION: Reference temperature for incompressible flows with the energy equation (1.0 by default) \\ingroup Config"
-    },
-    "INC_TEMPERATURE_REF": {
-      "type": "number",
-      "description": "INC_DENSITY_INIT \\n DESCRIPTION: Initial density for incompressible flows (1.2886 kg/m^3 by default) \\ingroup Config"
-    },
-    "INC_DENSITY_INIT": {
-      "type": "number",
-      "description": "INC_VELOCITY_INIT \\n DESCRIPTION: Initial velocity for incompressible flows (1.0,0,0 m/s by default) \\ingroup Config"
-    },
-    "INC_VELOCITY_INIT": {
-      "type": "array",
-      "description": "SU2 option: INC_VELOCITY_INIT",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "INC_TEMPERATURE_INIT": {
-      "type": "number",
-      "description": "INC_NONDIM \\n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \\ingroup Config"
-    },
-    "INC_NONDIM": {
-      "type": "string",
-      "description": "SU2 option: INC_NONDIM",
-      "default": "INITIAL_VALUES"
-    },
-    "INC_INLET_USENORMAL": {
-      "type": "boolean",
-      "description": "SU2 option: INC_INLET_USENORMAL",
-      "default": false
-    },
-    "INC_INLET_DAMPING": {
-      "type": "number",
-      "description": "INC_OUTLET_DAMPING \\n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \\ingroup Config"
-    },
-    "INC_OUTLET_DAMPING": {
-      "type": "number",
-      "description": "SU2 option: INC_OUTLET_DAMPING"
-    },
-    "SPECIES_INIT": {
-      "type": "array",
-      "description": "SU2 option: SPECIES_INIT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "SPECIES_CLIPPING": {
-      "type": "boolean",
-      "description": "SU2 option: SPECIES_CLIPPING",
-      "default": false
-    },
-    "SPECIES_CLIPPING_MAX": {
-      "type": "array",
-      "description": "SU2 option: SPECIES_CLIPPING_MAX",
-      "items": {
-        "type": "number"
-      }
-    },
-    "SPECIES_CLIPPING_MIN": {
-      "type": "array",
-      "description": "SU2 option: SPECIES_CLIPPING_MIN",
-      "items": {
-        "type": "number"
-      }
-    },
-    "FLAME_INIT_METHOD": {
-      "type": "string",
-      "description": "SU2 option: FLAME_INIT_METHOD",
-      "default": "FLAMELET_INIT_TYPE::NONE"
-    },
-    "FLAME_INIT": {
-      "type": "array",
-      "description": "SU2 option: FLAME_INIT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "SPARK_INIT": {
-      "type": "array",
-      "description": "SU2 option: SPARK_INIT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "SPARK_REACTION_RATES": {
-      "type": "array",
-      "description": "SU2 option: SPARK_REACTION_RATES",
-      "items": {
-        "type": "number"
-      }
-    },
-    "DIFFUSIVITY_MODEL": {
-      "type": "string",
-      "description": "SU2 option: DIFFUSIVITY_MODEL",
-      "default": "DIFFUSIVITYMODEL::CONSTANT_DIFFUSIVITY"
-    },
-    "DIFFUSIVITY_CONSTANT": {
-      "type": "number",
-      "description": "SCHMIDT_LAM \\n DESCRIPTION: Laminar Schmidt number of mass diffusion \\n DEFAULT 1.0 (~for Gases) \\ingroup Config"
-    },
-    "SCHMIDT_NUMBER_LAMINAR": {
-      "type": "number",
-      "description": "SCHMIDT_TURB \\n DESCRIPTION: Turbulent Schmidt number of mass diffusion \\n DEFAULT 0.70 (more or less experimental value) \\ingroup Config"
-    },
-    "SCHMIDT_NUMBER_TURBULENT": {
-      "type": "number",
-      "description": "DESCRIPTION: Constant Lewis number for mass diffusion"
-    },
-    "CONSTANT_LEWIS_NUMBER": {
-      "type": "array",
-      "description": "SU2 option: CONSTANT_LEWIS_NUMBER",
-      "items": {
-        "type": "number"
-      }
-    },
-    "FREESTREAM_VISCOSITY": {
-      "type": "number",
-      "description": "SU2 option: FREESTREAM_VISCOSITY"
-    },
-    "FREESTREAM_INTERMITTENCY": {
-      "type": "number",
-      "description": "SU2 option: FREESTREAM_INTERMITTENCY"
-    },
-    "FREESTREAM_TURBULENCEINTENSITY": {
-      "type": "number",
-      "description": "SU2 option: FREESTREAM_TURBULENCEINTENSITY"
-    },
-    "FREESTREAM_NU_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: FREESTREAM_NU_FACTOR"
-    },
-    "LOWER_LIMIT_K_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: LOWER_LIMIT_K_FACTOR"
-    },
-    "LOWER_LIMIT_OMEGA_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: LOWER_LIMIT_OMEGA_FACTOR"
-    },
-    "ENGINE_NU_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: ENGINE_NU_FACTOR"
-    },
-    "ACTDISK_SECONDARY_FLOW": {
-      "type": "number",
-      "description": "SU2 option: ACTDISK_SECONDARY_FLOW"
-    },
-    "INITIAL_BCTHRUST": {
-      "type": "number",
-      "description": "SU2 option: INITIAL_BCTHRUST"
-    },
-    "FREESTREAM_TURB2LAMVISCRATIO": {
-      "type": "number",
-      "description": "SU2 option: FREESTREAM_TURB2LAMVISCRATIO"
-    },
-    "SIDESLIP_ANGLE": {
-      "type": "number",
-      "description": "Sideslip angle (degrees)",
+      "description": "SU2 option: STREAMWISE_PERIODIC_MASSFLOW",
       "default": 0.0
     },
-    "FIXED_CL_MODE": {
-      "type": [
-        "boolean",
-        "string"
-      ],
-      "description": "SU2 option: FIXED_CL_MODE",
-      "default": false,
-      "enum": [
-        true,
-        false,
-        "YES",
-        "NO"
-      ]
-    },
-    "EVAL_DOF_DCX": {
+    "WRT_RESTART_COMPACT": {
       "type": "boolean",
-      "description": "SU2 option: EVAL_DOF_DCX",
+      "description": "SU2 option: WRT_RESTART_COMPACT",
       "default": false
     },
-    "DISCARD_INFILES": {
+    "READ_BINARY_RESTART": {
       "type": "boolean",
-      "description": "SU2 option: DISCARD_INFILES",
+      "description": "SU2 option: READ_BINARY_RESTART",
       "default": false
     },
-    "TARGET_CL": {
-      "type": "number",
-      "description": "SU2 option: TARGET_CL"
-    },
-    "DCL_DALPHA": {
-      "type": "number",
-      "description": "SU2 option: DCL_DALPHA"
-    },
-    "UPDATE_AOA_ITER_LIMIT": {
-      "type": "string",
-      "description": "SU2 option: UPDATE_AOA_ITER_LIMIT"
-    },
-    "UPDATE_IH": {
-      "type": "string",
-      "description": "SU2 option: UPDATE_IH"
-    },
-    "ITER_DCL_DALPHA": {
-      "type": "string",
-      "description": "SU2 option: ITER_DCL_DALPHA"
-    },
-    "DNETTHRUST_DBCTHRUST": {
-      "type": "number",
-      "description": "SU2 option: DNETTHRUST_DBCTHRUST"
-    },
-    "UPDATE_BCTHRUST": {
-      "type": "string",
-      "description": "SU2 option: UPDATE_BCTHRUST"
-    },
-    "REF_LENGTH": {
-      "type": "number",
-      "description": "Reference length for moment coefficients",
-      "minimum": 0,
-      "default": 1.0
-    },
-    "REF_VISCOSITY": {
-      "type": "number",
-      "description": "SU2 option: REF_VISCOSITY"
-    },
-    "REF_DIMENSIONALIZATION": {
-      "type": "string",
-      "description": "SU2 option: REF_DIMENSIONALIZATION",
-      "default": "DIMENSIONAL"
-    },
-    "MARKER_ANALYZE": {
-      "type": "array",
-      "description": "SU2 option: MARKER_ANALYZE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_DEFORM_MESH": {
-      "type": "array",
-      "description": "SU2 option: MARKER_DEFORM_MESH",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_DEFORM_MESH_SYM_PLANE": {
-      "type": "array",
-      "description": "SU2 option: MARKER_DEFORM_MESH_SYM_PLANE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_FLUID_LOAD": {
-      "type": "array",
-      "description": "SU2 option: MARKER_FLUID_LOAD",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_ZONE_INTERFACE": {
-      "type": "array",
-      "description": "SU2 option: MARKER_ZONE_INTERFACE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_CHT_INTERFACE": {
-      "type": "array",
-      "description": "SU2 option: MARKER_CHT_INTERFACE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "CHT_INTERFACE_CONTACT_RESISTANCE": {
-      "type": "array",
-      "description": "SU2 option: CHT_INTERFACE_CONTACT_RESISTANCE",
-      "items": {
-        "type": "number"
-      }
-    },
-    "MARKER_INTERNAL": {
-      "type": "array",
-      "description": "SU2 option: MARKER_INTERNAL",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_CUSTOM": {
-      "type": "array",
-      "description": "SU2 option: MARKER_CUSTOM",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_PERIODIC": {
-      "type": "array",
-      "description": "Periodic boundary markers with transformation parameters",
-      "items": {
-        "oneOf": [
-          {
-            "type": "string"
-          },
-          {
-            "type": "number"
-          }
-        ]
-      }
-    },
-    "MARKER_PYTHON_CUSTOM": {
-      "type": "array",
-      "description": "SU2 option: MARKER_PYTHON_CUSTOM",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_WALL_FUNCTIONS": {
-      "type": "array",
-      "description": "SU2 option: MARKER_WALL_FUNCTIONS",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_SPECIES_STRONG_BC": {
-      "type": "array",
-      "description": "SU2 option: MARKER_SPECIES_STRONG_BC",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_ACTDISK_BEM_CG": {
-      "type": "array",
-      "description": "SU2 option: MARKER_ACTDISK_BEM_CG",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_ACTDISK_BEM_AXIS": {
-      "type": "array",
-      "description": "SU2 option: MARKER_ACTDISK_BEM_AXIS",
-      "items": {
-        "type": "string"
-      }
-    },
-    "ACTDISK_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: ACTDISK_FILENAME"
-    },
-    "INC_INLET_TYPE": {
-      "type": "array",
-      "description": "SU2 option: INC_INLET_TYPE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "SPECIFIED_INLET_PROFILE": {
+    "WRT_RESTART_OVERWRITE": {
       "type": "boolean",
-      "description": "SU2 option: SPECIFIED_INLET_PROFILE",
-      "default": false
+      "description": "SU2 option: WRT_RESTART_OVERWRITE",
+      "default": true
     },
-    "INLET_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: INLET_FILENAME"
-    },
-    "INLET_MATCHING_TOLERANCE": {
-      "type": "number",
-      "description": "MARKER_INLET  \\n DESCRIPTION: Inlet boundary marker(s) with the following formats,\n   Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,\n   flow_direction_y, flow_direction_z, ... ) where flow_direction is\n   a unit vector.\n   Mass Flow: (inlet marker, density, velocity magnitude, flow_direction_x,\n   flow_direction_y, flow_direction_z, ... ) where flow_direction is\n   a unit vector. \\ingroup Config"
-    },
-    "MARKER_INLET_SPECIES": {
-      "type": "array",
-      "description": "SU2 option: MARKER_INLET_SPECIES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_INLET_TURBULENT": {
-      "type": "array",
-      "description": "SU2 option: MARKER_INLET_TURBULENT",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_GILES": {
-      "type": "array",
-      "description": "SU2 option: MARKER_GILES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "SPATIAL_FOURIER": {
+    "WRT_SURFACE_OVERWRITE": {
       "type": "boolean",
-      "description": "SU2 option: SPATIAL_FOURIER",
-      "default": false
+      "description": "SU2 option: WRT_SURFACE_OVERWRITE",
+      "default": true
     },
-    "GILES_EXTRA_RELAXFACTOR": {
-      "type": "array",
-      "description": "SU2 option: GILES_EXTRA_RELAXFACTOR",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "MIXINGPLANE_INTERFACE_KIND": {
-      "type": "string",
-      "description": "SU2 option: MIXINGPLANE_INTERFACE_KIND",
-      "default": "NEAREST_SPAN"
-    },
-    "AVERAGE_PROCESS_KIND": {
-      "type": "string",
-      "description": "SU2 option: AVERAGE_PROCESS_KIND",
-      "default": "AREA"
-    },
-    "PERFORMANCE_AVERAGE_PROCESS_KIND": {
-      "type": "string",
-      "description": "SU2 option: PERFORMANCE_AVERAGE_PROCESS_KIND",
-      "default": "AREA"
-    },
-    "MIXEDOUT_COEFF": {
-      "type": "array",
-      "description": "SU2 option: MIXEDOUT_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "RAMP_ROTATING_FRAME": {
+    "WRT_VOLUME_OVERWRITE": {
       "type": "boolean",
-      "description": "SU2 option: RAMP_ROTATING_FRAME",
-      "default": false
-    },
-    "RAMP_ROTATING_FRAME_COEFF": {
-      "type": "array",
-      "description": "SU2 option: RAMP_ROTATING_FRAME_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "AVERAGE_MACH_LIMIT": {
-      "type": "number",
-      "description": "RAMP_OUTLET_PRESSURE\\n DESCRIPTION: option to ramp up or down the rotating frame velocity value"
-    },
-    "RAMP_OUTLET_PRESSURE": {
-      "type": "boolean",
-      "description": "SU2 option: RAMP_OUTLET_PRESSURE",
-      "default": false
-    },
-    "RAMP_OUTLET_PRESSURE_COEFF": {
-      "type": "array",
-      "description": "SU2 option: RAMP_OUTLET_PRESSURE_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "MARKER_MIXINGPLANE_INTERFACE": {
-      "type": "array",
-      "description": "SU2 option: MARKER_MIXINGPLANE_INTERFACE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "TURBULENT_MIXINGPLANE": {
-      "type": "boolean",
-      "description": "SU2 option: TURBULENT_MIXINGPLANE",
-      "default": false
-    },
-    "MARKER_TURBOMACHINERY": {
-      "type": "array",
-      "description": "SU2 option: MARKER_TURBOMACHINERY",
-      "items": {
-        "type": "string"
-      }
-    },
-    "NUM_SPANWISE_SECTIONS": {
-      "type": "string",
-      "description": "SU2 option: NUM_SPANWISE_SECTIONS"
-    },
-    "SPANWISE_KIND": {
-      "type": "string",
-      "description": "SU2 option: SPANWISE_KIND",
-      "default": "AUTOMATIC"
-    },
-    "TURBOMACHINERY_KIND": {
-      "type": "array",
-      "description": "SU2 option: TURBOMACHINERY_KIND",
-      "items": {
-        "type": "string"
-      }
-    },
-    "TURBO_PERF_KIND": {
-      "type": "array",
-      "description": "SU2 option: TURBO_PERF_KIND",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_SHROUD": {
-      "type": "array",
-      "description": "SU2 option: MARKER_SHROUD",
-      "items": {
-        "type": "string"
-      }
-    },
-    "INC_OUTLET_TYPE": {
-      "type": "array",
-      "description": "SU2 option: INC_OUTLET_TYPE",
-      "items": {
-        "type": "string"
-      }
-    },
-    "INTEGRATED_HEATFLUX": {
-      "type": "boolean",
-      "description": "SU2 option: INTEGRATED_HEATFLUX",
-      "default": false
-    },
-    "MARKER_HEATTRANSFER": {
-      "type": "array",
-      "description": "SU2 option: MARKER_HEATTRANSFER",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_SMOLUCHOWSKI_MAXWELL": {
-      "type": "array",
-      "description": "SU2 option: MARKER_SMOLUCHOWSKI_MAXWELL",
-      "items": {
-        "type": "string"
-      }
-    },
-    "WALL_ROUGHNESS": {
-      "type": "string",
-      "description": "SU2 option: WALL_ROUGHNESS"
-    },
-    "HIGHLITE_AREA": {
-      "type": "number",
-      "description": "SU2 option: HIGHLITE_AREA"
-    },
-    "FAN_POLY_EFF": {
-      "type": "number",
-      "description": "SUBSONIC_ENGINE\\n DESCRIPTION: Engine subsonic intake region \\ingroup Config"
-    },
-    "SUBSONIC_ENGINE": {
-      "type": "boolean",
-      "description": "SU2 option: SUBSONIC_ENGINE",
-      "default": false
-    },
-    "ACTDISK_DOUBLE_SURFACE": {
-      "type": "boolean",
-      "description": "SU2 option: ACTDISK_DOUBLE_SURFACE",
-      "default": false
-    },
-    "HISTORY_FILE_APPEND": {
-      "type": "boolean",
-      "description": "SU2 option: HISTORY_FILE_APPEND",
-      "default": false
-    },
-    "BEM_PROP_BLADE_ANGLE": {
-      "type": "number",
-      "description": "SU2 option: BEM_PROP_BLADE_ANGLE"
-    },
-    "BEM_PROP_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: BEM_PROP_FILENAME"
-    },
-    "BEM_FREQ": {
-      "type": "string",
-      "description": "SU2 option: BEM_FREQ"
-    },
-    "ENGINE_HALF_MODEL": {
-      "type": "boolean",
-      "description": "SU2 option: ENGINE_HALF_MODEL",
-      "default": false
-    },
-    "ACTDISK_SU2_DEF": {
-      "type": "boolean",
-      "description": "SU2 option: ACTDISK_SU2_DEF",
-      "default": false
-    },
-    "DISTORTION_RACK": {
-      "type": "array",
-      "description": "SU2 option: DISTORTION_RACK",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "SUBSONIC_ENGINE_VALUES": {
-      "type": "array",
-      "description": "SU2 option: SUBSONIC_ENGINE_VALUES",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 5,
-      "maxItems": 5
-    },
-    "SUBSONIC_ENGINE_CYL": {
-      "type": "array",
-      "description": "SU2 option: SUBSONIC_ENGINE_CYL",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 7,
-      "maxItems": 7
-    },
-    "MARKER_ENGINE_EXHAUST": {
-      "type": "array",
-      "description": "SU2 option: MARKER_ENGINE_EXHAUST",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_CLAMPED": {
-      "type": "array",
-      "description": "SU2 option: MARKER_CLAMPED",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_NORMAL_DISPL": {
-      "type": "array",
-      "description": "SU2 option: MARKER_NORMAL_DISPL",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_DAMPER": {
-      "type": "array",
-      "description": "SU2 option: MARKER_DAMPER",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_LOAD": {
-      "type": "array",
-      "description": "SU2 option: MARKER_LOAD",
-      "items": {
-        "type": "string"
-      }
-    },
-    "MARKER_DISPLACEMENT": {
-      "type": "array",
-      "description": "SU2 option: MARKER_DISPLACEMENT",
-      "items": {
-        "type": "string"
-      }
-    },
-    "SINE_LOAD": {
-      "type": "boolean",
-      "description": "SU2 option: SINE_LOAD",
-      "default": false
-    },
-    "SINE_LOAD_COEFF": {
-      "type": "array",
-      "description": "SU2 option: SINE_LOAD_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "RAMP_AND_RELEASE_LOAD": {
-      "type": "boolean",
-      "description": "SU2 option: RAMP_AND_RELEASE_LOAD",
-      "default": false
-    },
-    "BC_EVAL_FREQ": {
-      "type": "string",
-      "description": "SU2 option: BC_EVAL_FREQ"
-    },
-    "DAMP_ENGINE_INFLOW": {
-      "type": "number",
-      "description": "SU2 option: DAMP_ENGINE_INFLOW"
-    },
-    "DAMP_ENGINE_EXHAUST": {
-      "type": "number",
-      "description": "ENGINE_INFLOW_TYPE  \\n DESCRIPTION: Inlet boundary type \\n OPTIONS: see \\link Engine_Inflow_Map \\endlink \\n Default: FAN_FACE_MACH \\ingroup Config"
-    },
-    "ENGINE": {
-      "type": "boolean",
-      "description": "SU2 option: ENGINE",
-      "default": false
-    },
-    "BUFFET_K": {
-      "type": "number",
-      "description": "SU2 option: BUFFET_K"
-    },
-    "BUFFET_LAMBDA": {
-      "type": "number",
-      "description": "SU2 option: BUFFET_LAMBDA"
-    },
-    "NEWTON_KRYLOV": {
-      "type": "boolean",
-      "description": "SU2 option: NEWTON_KRYLOV",
-      "default": false
-    },
-    "NEWTON_KRYLOV_IPARAM": {
-      "type": "string",
-      "description": "SU2 option: NEWTON_KRYLOV_IPARAM"
-    },
-    "NEWTON_KRYLOV_DPARAM": {
-      "type": "array",
-      "description": "SU2 option: NEWTON_KRYLOV_DPARAM",
-      "items": {
-        "type": "number"
-      }
-    },
-    "QUASI_NEWTON_NUM_SAMPLES": {
-      "type": "string",
-      "description": "SU2 option: QUASI_NEWTON_NUM_SAMPLES"
-    },
-    "USE_VECTORIZATION": {
-      "type": "boolean",
-      "description": "SU2 option: USE_VECTORIZATION",
-      "default": false
-    },
-    "TIME_MARCHING": {
-      "type": "string",
-      "description": "Time marching strategy",
-      "default": "STEADY",
-      "enum": [
-        "STEADY",
-        "TIME_STEPPING",
-        "HARMONIC_BALANCE"
-      ]
-    },
-    "CFL_NUMBER": {
-      "type": "number",
-      "description": "CFL number",
-      "minimum": 0,
-      "default": 1.25
-    },
-    "MAX_DELTA_TIME": {
-      "type": "number",
-      "description": "SU2 option: MAX_DELTA_TIME"
-    },
-    "CFL_ADAPT": {
-      "type": "boolean",
-      "description": "SU2 option: CFL_ADAPT",
-      "default": false
-    },
-    "CFL_ADAPT_PARAM": {
-      "type": "array",
-      "description": "SU2 option: CFL_ADAPT_PARAM",
-      "items": {
-        "type": "number"
-      }
-    },
-    "CFL_REDUCTION_ADJFLOW": {
-      "type": "number",
-      "description": "SU2 option: CFL_REDUCTION_ADJFLOW"
-    },
-    "CFL_REDUCTION_TURB": {
-      "type": "number",
-      "description": "SU2 option: CFL_REDUCTION_TURB"
-    },
-    "CFL_REDUCTION_ADJTURB": {
-      "type": "number",
-      "description": "CFL_REDUCTION_SPECIES \\n DESCRIPTION: Reduction factor of the CFL coefficient in the species problem \\n DEFAULT: 1.0"
-    },
-    "CFL_REDUCTION_SPECIES": {
-      "type": "number",
-      "description": "SU2 option: CFL_REDUCTION_SPECIES"
-    },
-    "EXT_ITER_OFFSET": {
-      "type": "string",
-      "description": "SU2 option: EXT_ITER_OFFSET"
-    },
-    "RK_ALPHA_COEFF": {
-      "type": "array",
-      "description": "SU2 option: RK_ALPHA_COEFF",
-      "items": {
-        "type": "number"
-      }
-    },
-    "LEVELS_TIME_ACCURATE_LTS": {
-      "type": "string",
-      "description": "SU2 option: LEVELS_TIME_ACCURATE_LTS"
-    },
-    "TIME_DOFS_ADER_DG": {
-      "type": "string",
-      "description": "SU2 option: TIME_DOFS_ADER_DG"
-    },
-    "UNST_CFL_NUMBER": {
-      "type": "number",
-      "description": "SU2 option: UNST_CFL_NUMBER"
-    },
-    "TIME_INSTANCES": {
-      "type": "string",
-      "description": "SU2 option: TIME_INSTANCES"
-    },
-    "HB_PERIOD": {
-      "type": "number",
-      "description": "SU2 option: HB_PERIOD"
-    },
-    "HB_PRECONDITION": {
-      "type": "boolean",
-      "description": "SU2 option: HB_PRECONDITION",
-      "default": false
-    },
-    "UNST_ADJOINT_ITER": {
-      "type": "integer",
-      "description": "SU2 option: UNST_ADJOINT_ITER"
-    },
-    "ITER_AVERAGE_OBJ": {
-      "type": "integer",
-      "description": "SU2 option: ITER_AVERAGE_OBJ"
-    },
-    "TIME_DISCRE_FLOW": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_FLOW",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_FEM_FLOW": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_FEM_FLOW",
-      "default": "RUNGE_KUTTA_EXPLICIT"
-    },
-    "ADER_PREDICTOR": {
-      "type": "string",
-      "description": "SU2 option: ADER_PREDICTOR",
-      "default": "ADER_ALIASED_PREDICTOR"
-    },
-    "TIME_DISCRE_ADJFLOW": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_ADJFLOW",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_TURB": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_TURB",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_ADJTURB": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_ADJTURB",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_SPECIES": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_SPECIES",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_FEA": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_FEA",
-      "default": "STRUCT_TIME_INT::NEWMARK_IMPLICIT"
-    },
-    "TIME_DISCRE_RADIATION": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_RADIATION",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIME_DISCRE_HEAT": {
-      "type": "string",
-      "description": "SU2 option: TIME_DISCRE_HEAT",
-      "default": "EULER_IMPLICIT"
-    },
-    "TIMESTEP_HEAT": {
-      "type": "string",
-      "description": "SU2 option: TIMESTEP_HEAT",
-      "default": "MINIMUM"
-    },
-    "LINEAR_SOLVER_ERROR": {
-      "type": "number",
-      "description": "Linear solver error tolerance",
-      "minimum": 0,
-      "default": 1e-06
-    },
-    "LINEAR_SOLVER_ITER": {
-      "type": "integer",
-      "description": "Linear solver iterations",
-      "minimum": 1,
-      "default": 10
-    },
-    "LINEAR_SOLVER_ILU_FILL_IN": {
-      "type": "string",
-      "description": "SU2 option: LINEAR_SOLVER_ILU_FILL_IN"
-    },
-    "LINEAR_SOLVER_RESTART_FREQUENCY": {
-      "type": "string",
-      "description": "SU2 option: LINEAR_SOLVER_RESTART_FREQUENCY"
-    },
-    "LINEAR_SOLVER_SMOOTHER_RELAXATION": {
-      "type": "number",
-      "description": "SU2 option: LINEAR_SOLVER_SMOOTHER_RELAXATION"
-    },
-    "LINEAR_SOLVER_PREC_THREADS": {
-      "type": "string",
-      "description": "SU2 option: LINEAR_SOLVER_PREC_THREADS"
-    },
-    "RELAXATION_FACTOR_ADJOINT": {
-      "type": "number",
-      "description": "SU2 option: RELAXATION_FACTOR_ADJOINT"
-    },
-    "RELAXATION_FACTOR_CHT": {
-      "type": "number",
-      "description": "SU2 option: RELAXATION_FACTOR_CHT"
-    },
-    "ROE_KAPPA": {
-      "type": "number",
-      "description": "SU2 option: ROE_KAPPA"
-    },
-    "LOW_MACH_PREC": {
-      "type": "boolean",
-      "description": "SU2 option: LOW_MACH_PREC",
-      "default": false
-    },
-    "LOW_MACH_CORR": {
-      "type": "boolean",
-      "description": "SU2 option: LOW_MACH_CORR",
-      "default": false
-    },
-    "MIN_ROE_TURKEL_PREC": {
-      "type": "number",
-      "description": "SU2 option: MIN_ROE_TURKEL_PREC"
-    },
-    "MAX_ROE_TURKEL_PREC": {
-      "type": "number",
-      "description": "SU2 option: MAX_ROE_TURKEL_PREC"
-    },
-    "ENTROPY_FIX_COEFF": {
-      "type": "number",
-      "description": "SU2 option: ENTROPY_FIX_COEFF"
-    },
-    "DISCADJ_LIN_SOLVER": {
-      "type": "string",
-      "description": "SU2 option: DISCADJ_LIN_SOLVER",
-      "default": "FGMRES"
-    },
-    "DISCADJ_LIN_PREC": {
-      "type": "string",
-      "description": "SU2 option: DISCADJ_LIN_PREC",
-      "default": "ILU"
-    },
-    "CONV_FIELD": {
-      "type": "array",
-      "description": "SU2 option: CONV_FIELD",
-      "items": {
-        "type": "string"
-      }
-    },
-    "CONV_RESIDUAL_MINVAL": {
-      "type": "number",
-      "description": "CONV_STARTITER\\n DESCRIPTION: Iteration number to begin convergence monitoring\\n DEFAULT: 5 \\ingroup Config"
-    },
-    "CONV_STARTITER": {
-      "type": "string",
-      "description": "SU2 option: CONV_STARTITER"
-    },
-    "CONV_CAUCHY_ELEMS": {
-      "type": "string",
-      "description": "SU2 option: CONV_CAUCHY_ELEMS"
-    },
-    "CONV_CAUCHY_EPS": {
-      "type": "number",
-      "description": "CONV_WINDOW_STARTITER\\n DESCRIPTION: Iteration number after START_ITER_WND  to begin convergence monitoring\\n DEFAULT: 15 \\ingroup Config"
-    },
-    "CONV_WINDOW_STARTITER": {
-      "type": "string",
-      "description": "SU2 option: CONV_WINDOW_STARTITER"
-    },
-    "CONV_WINDOW_CAUCHY_EPS": {
-      "type": "number",
-      "description": "CONV_WINDOW_CAUCHY_ELEMS\\n DESCRIPTION: Number of elements to apply the criteria. \\n DEFAULT 100 \\ingroup Config"
-    },
-    "CONV_WINDOW_CAUCHY_ELEMS": {
-      "type": "string",
-      "description": "SU2 option: CONV_WINDOW_CAUCHY_ELEMS"
-    },
-    "WINDOW_CAUCHY_CRIT": {
-      "type": "boolean",
-      "description": "SU2 option: WINDOW_CAUCHY_CRIT",
-      "default": false
-    },
-    "CONV_WINDOW_FIELD": {
-      "type": "array",
-      "description": "SU2 option: CONV_WINDOW_FIELD",
-      "items": {
-        "type": "string"
-      }
-    },
-    "NUM_METHOD_GRAD_RECON": {
-      "type": "string",
-      "description": "SU2 option: NUM_METHOD_GRAD_RECON",
-      "default": "NO_GRADIENT"
-    },
-    "VENKAT_LIMITER_COEFF": {
-      "type": "number",
-      "description": "SU2 option: VENKAT_LIMITER_COEFF"
-    },
-    "ADJ_SHARP_LIMITER_COEFF": {
-      "type": "number",
-      "description": "SU2 option: ADJ_SHARP_LIMITER_COEFF"
-    },
-    "NUM_METHOD_FEM_FLOW": {
-      "type": "string",
-      "description": "SU2 option: NUM_METHOD_FEM_FLOW"
-    },
-    "MUSCL_FLOW": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_FLOW",
-      "default": false
-    },
-    "SLOPE_LIMITER_FLOW": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_FLOW",
-      "default": "LIMITER::VENKATAKRISHNAN"
-    },
-    "JST_SENSOR_COEFF": {
-      "type": "array",
-      "description": "SU2 option: JST_SENSOR_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "LAX_SENSOR_COEFF": {
-      "type": "number",
-      "description": "USE_ACCURATE_FLUX_JACOBIANS \\n DESCRIPTION: Use numerically computed Jacobians for AUSM+up(2) and SLAU(2) \\ingroup Config"
-    },
-    "USE_ACCURATE_FLUX_JACOBIANS": {
-      "type": "boolean",
-      "description": "SU2 option: USE_ACCURATE_FLUX_JACOBIANS",
-      "default": false
-    },
-    "CENTRAL_JACOBIAN_FIX_FACTOR": {
-      "type": "number",
-      "description": "CENTRAL_JACOBIAN_FIX_FACTOR \\n DESCRIPTION: Control numerical properties of the global Jacobian matrix using a multiplication factor for incompressible central schemes \\ingroup Config"
-    },
-    "CENTRAL_INC_JACOBIAN_FIX_FACTOR": {
-      "type": "number",
-      "description": "SU2 option: CENTRAL_INC_JACOBIAN_FIX_FACTOR"
-    },
-    "CONV_NUM_METHOD_ADJFLOW": {
-      "type": "string",
-      "description": "SU2 option: CONV_NUM_METHOD_ADJFLOW"
-    },
-    "MUSCL_ADJFLOW": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_ADJFLOW",
-      "default": false
-    },
-    "SLOPE_LIMITER_ADJFLOW": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_ADJFLOW",
-      "default": "LIMITER::VENKATAKRISHNAN"
-    },
-    "ADJ_JST_SENSOR_COEFF": {
-      "type": "array",
-      "description": "SU2 option: ADJ_JST_SENSOR_COEFF",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "ADJ_LAX_SENSOR_COEFF": {
-      "type": "number",
-      "description": "MUSCL_TURB \\n DESCRIPTION: Check if the MUSCL scheme should be used \\ingroup Config"
-    },
-    "MUSCL_TURB": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_TURB",
-      "default": false
-    },
-    "SLOPE_LIMITER_TURB": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_TURB",
-      "default": "LIMITER::VENKATAKRISHNAN"
-    },
-    "CONV_NUM_METHOD_TURB": {
-      "type": "string",
-      "description": "SU2 option: CONV_NUM_METHOD_TURB"
-    },
-    "MUSCL_ADJTURB": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_ADJTURB",
-      "default": false
-    },
-    "SLOPE_LIMITER_ADJTURB": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_ADJTURB",
-      "default": "LIMITER::VENKATAKRISHNAN"
-    },
-    "CONV_NUM_METHOD_ADJTURB": {
-      "type": "string",
-      "description": "SU2 option: CONV_NUM_METHOD_ADJTURB"
-    },
-    "MUSCL_SPECIES": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_SPECIES",
-      "default": false
-    },
-    "SLOPE_LIMITER_SPECIES": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_SPECIES",
-      "default": "LIMITER::NONE"
-    },
-    "CONV_NUM_METHOD_SPECIES": {
-      "type": "string",
-      "description": "SU2 option: CONV_NUM_METHOD_SPECIES"
-    },
-    "MUSCL_HEAT": {
-      "type": "boolean",
-      "description": "SU2 option: MUSCL_HEAT",
-      "default": false
-    },
-    "SLOPE_LIMITER_HEAT": {
-      "type": "string",
-      "description": "SU2 option: SLOPE_LIMITER_HEAT",
-      "default": "LIMITER::NONE"
-    },
-    "CONV_NUM_METHOD_HEAT": {
-      "type": "string",
-      "description": "SU2 option: CONV_NUM_METHOD_HEAT"
-    },
-    "LIMIT_ADJFLOW": {
-      "type": "number",
-      "description": "MG_ADJFLOW\\n DESCRIPTION: Multigrid with the adjoint problem. \\n Defualt: YES \\ingroup Config"
-    },
-    "MG_ADJFLOW": {
-      "type": "boolean",
-      "description": "SU2 option: MG_ADJFLOW",
-      "default": false
-    },
-    "OBJECTIVE_WEIGHT": {
-      "type": "array",
-      "description": "SU2 option: OBJECTIVE_WEIGHT",
-      "items": {
-        "type": "number"
-      }
-    },
-    "OBJECTIVE_FUNCTION": {
-      "type": "array",
-      "description": "SU2 option: OBJECTIVE_FUNCTION",
-      "items": {
-        "type": "string"
-      }
-    },
-    "CUSTOM_OBJFUNC": {
-      "type": "string",
-      "description": "SU2 option: CUSTOM_OBJFUNC"
-    },
-    "CUSTOM_OUTPUTS": {
-      "type": "string",
-      "description": "SU2 option: CUSTOM_OUTPUTS"
-    },
-    "DCD_DCL_VALUE": {
-      "type": "number",
-      "description": "SU2 option: DCD_DCL_VALUE"
-    },
-    "DCMX_DCL_VALUE": {
-      "type": "number",
-      "description": "SU2 option: DCMX_DCL_VALUE"
-    },
-    "DCMY_DCL_VALUE": {
-      "type": "number",
-      "description": "SU2 option: DCMY_DCL_VALUE"
-    },
-    "DCMZ_DCL_VALUE": {
-      "type": "number",
-      "description": "SU2 option: DCMZ_DCL_VALUE"
-    },
-    "GEO_BOUNDS": {
-      "type": "array",
-      "description": "SU2 option: GEO_BOUNDS",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 2,
-      "maxItems": 2
-    },
-    "GEO_DESCRIPTION": {
-      "type": "string",
-      "description": "SU2 option: GEO_DESCRIPTION",
-      "default": "WING"
-    },
-    "GEO_WATERLINE_LOCATION": {
-      "type": "number",
-      "description": "SU2 option: GEO_WATERLINE_LOCATION"
-    },
-    "GEO_NUMBER_STATIONS": {
-      "type": "string",
-      "description": "SU2 option: GEO_NUMBER_STATIONS"
-    },
-    "GEO_LOCATION_STATIONS": {
-      "type": "array",
-      "description": "SU2 option: GEO_LOCATION_STATIONS",
-      "items": {
-        "type": "number"
-      }
-    },
-    "GEO_NACELLE_LOCATION": {
-      "type": "array",
-      "description": "SU2 option: GEO_NACELLE_LOCATION",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 5,
-      "maxItems": 5
-    },
-    "GEO_PLOT_STATIONS": {
-      "type": "boolean",
-      "description": "SU2 option: GEO_PLOT_STATIONS",
-      "default": false
-    },
-    "GEO_MODE": {
-      "type": "string",
-      "description": "SU2 option: GEO_MODE",
-      "default": "FUNCTION"
-    },
-    "DRAG_IN_SONICBOOM": {
-      "type": "number",
-      "description": "SU2 option: DRAG_IN_SONICBOOM"
-    },
-    "SENS_SMOOTHING": {
-      "type": "string",
-      "description": "SU2 option: SENS_SMOOTHING",
-      "default": "NO_SMOOTH"
-    },
-    "FROZEN_VISC_CONT": {
-      "type": "boolean",
-      "description": "SU2 option: FROZEN_VISC_CONT",
-      "default": false
-    },
-    "FROZEN_VISC_DISC": {
-      "type": "boolean",
-      "description": "SU2 option: FROZEN_VISC_DISC",
-      "default": false
-    },
-    "FROZEN_LIMITER_DISC": {
-      "type": "boolean",
-      "description": "SU2 option: FROZEN_LIMITER_DISC",
-      "default": false
-    },
-    "INCONSISTENT_DISC": {
-      "type": "boolean",
-      "description": "SU2 option: INCONSISTENT_DISC",
-      "default": false
-    },
-    "FIX_AZIMUTHAL_LINE": {
-      "type": "number",
-      "description": "SU2 option: FIX_AZIMUTHAL_LINE"
-    },
-    "SENS_REMOVE_SHARP": {
-      "type": "boolean",
-      "description": "SU2 option: SENS_REMOVE_SHARP",
-      "default": false
-    },
-    "REORIENT_ELEMENTS": {
-      "type": "boolean",
-      "description": "SU2 option: REORIENT_ELEMENTS",
-      "default": false
-    },
-    "SMOOTH_GRADIENT": {
-      "type": "boolean",
-      "description": "SU2 option: SMOOTH_GRADIENT",
-      "default": false
-    },
-    "SMOOTHING_EPSILON1": {
-      "type": "number",
-      "description": "SU2 option: SMOOTHING_EPSILON1"
-    },
-    "SMOOTHING_EPSILON2": {
-      "type": "number",
-      "description": "SU2 option: SMOOTHING_EPSILON2"
-    },
-    "SEPARATE_DIMENSIONS": {
-      "type": "boolean",
-      "description": "SU2 option: SEPARATE_DIMENSIONS",
-      "default": false
-    },
-    "SMOOTH_ON_SURFACE": {
-      "type": "boolean",
-      "description": "SU2 option: SMOOTH_ON_SURFACE",
-      "default": false
-    },
-    "DIRICHLET_SURFACE_BOUNDARY": {
-      "type": "boolean",
-      "description": "SU2 option: DIRICHLET_SURFACE_BOUNDARY",
-      "default": false
-    },
-    "SOBOLEV_MODE": {
-      "type": "string",
-      "description": "SU2 option: SOBOLEV_MODE",
-      "default": "ENUM_SOBOLEV_MODUS::NONE"
-    },
-    "HESS_OBJFUNC_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: HESS_OBJFUNC_FILENAME"
-    },
-    "GRAD_LINEAR_SOLVER": {
-      "type": "string",
-      "description": "SU2 option: GRAD_LINEAR_SOLVER",
-      "default": "FGMRES"
-    },
-    "GRAD_LINEAR_SOLVER_PREC": {
-      "type": "string",
-      "description": "SU2 option: GRAD_LINEAR_SOLVER_PREC",
-      "default": "ILU"
-    },
-    "GRAD_LINEAR_SOLVER_ERROR": {
-      "type": "number",
-      "description": "SU2 option: GRAD_LINEAR_SOLVER_ERROR"
-    },
-    "GRAD_LINEAR_SOLVER_ITER": {
-      "type": "string",
-      "description": "SU2 option: GRAD_LINEAR_SOLVER_ITER"
-    },
-    "TABULAR_FORMAT": {
-      "type": "string",
-      "description": "SU2 option: TABULAR_FORMAT",
-      "default": "TAB_OUTPUT::TAB_CSV"
-    },
-    "OUTPUT_PRECISION": {
-      "type": "string",
-      "description": "SU2 option: OUTPUT_PRECISION"
-    },
-    "ACTDISK_JUMP": {
-      "type": "string",
-      "description": "SU2 option: ACTDISK_JUMP",
-      "default": "DIFFERENCE"
-    },
-    "MESH_FORMAT": {
-      "type": "string",
-      "description": "SU2 option: MESH_FORMAT",
-      "default": "SU2"
-    },
-    "MESH_FILENAME": {
-      "type": "string",
-      "description": "Mesh input filename",
-      "default": "mesh.su2"
-    },
-    "MESH_OUT_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: MESH_OUT_FILENAME"
-    },
-    "MESH_BOX_SIZE": {
-      "type": "string",
-      "description": "SU2 option: MESH_BOX_SIZE"
-    },
-    "MESH_BOX_LENGTH": {
-      "type": "array",
-      "description": "SU2 option: MESH_BOX_LENGTH",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "MESH_BOX_OFFSET": {
-      "type": "array",
-      "description": "SU2 option: MESH_BOX_OFFSET",
-      "items": {
-        "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
-    },
-    "MESH_BOX_POLY_SOL_FEM": {
-      "type": "string",
-      "description": "SU2 option: MESH_BOX_POLY_SOL_FEM"
-    },
-    "MULTIZONE_MESH": {
-      "type": "boolean",
-      "description": "SU2 option: MULTIZONE_MESH",
-      "default": false
-    },
-    "MULTIZONE_RESIDUAL": {
-      "type": "boolean",
-      "description": "SU2 option: MULTIZONE_RESIDUAL",
-      "default": false
-    },
-    "CONTROLLING_VARIABLE_NAMES": {
-      "type": "array",
-      "description": "SU2 option: CONTROLLING_VARIABLE_NAMES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "CONTROLLING_VARIABLE_SOURCE_NAMES": {
-      "type": "array",
-      "description": "SU2 option: CONTROLLING_VARIABLE_SOURCE_NAMES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "LOOKUP_NAMES": {
-      "type": "array",
-      "description": "SU2 option: LOOKUP_NAMES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "USER_SCALAR_NAMES": {
-      "type": "array",
-      "description": "SU2 option: USER_SCALAR_NAMES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "USER_SOURCE_NAMES": {
-      "type": "array",
-      "description": "SU2 option: USER_SOURCE_NAMES",
-      "items": {
-        "type": "string"
-      }
-    },
-    "PREFERENTIAL_DIFFUSION": {
-      "type": "boolean",
-      "description": "SU2 option: PREFERENTIAL_DIFFUSION",
-      "default": false
-    },
-    "CONV_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: CONV_FILENAME"
-    },
-    "BREAKDOWN_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: BREAKDOWN_FILENAME"
-    },
-    "SOLUTION_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: SOLUTION_FILENAME"
-    },
-    "SOLUTION_ADJ_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: SOLUTION_ADJ_FILENAME"
-    },
-    "RESTART_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: RESTART_FILENAME"
-    },
-    "RESTART_ADJ_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: RESTART_ADJ_FILENAME"
-    },
-    "VOLUME_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: VOLUME_FILENAME"
-    },
-    "VOLUME_ADJ_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: VOLUME_ADJ_FILENAME"
-    },
-    "GRAD_OBJFUNC_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: GRAD_OBJFUNC_FILENAME"
-    },
-    "VALUE_OBJFUNC_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: VALUE_OBJFUNC_FILENAME"
-    },
-    "SURFACE_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: SURFACE_FILENAME"
-    },
-    "SURFACE_ADJ_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: SURFACE_ADJ_FILENAME"
-    },
-    "SURFACE_SENS_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: SURFACE_SENS_FILENAME"
-    },
-    "VOLUME_SENS_FILENAME": {
-      "type": "string",
-      "description": "SU2 option: VOLUME_SENS_FILENAME"
+      "description": "SU2 option: WRT_VOLUME_OVERWRITE",
+      "default": true
     },
     "WRT_PERFORMANCE": {
       "type": "boolean",
@@ -2700,12 +1396,13 @@
       "default": false
     },
     "MARKER_ANALYZE_AVERAGE": {
-      "type": "array",
+      "type": "string",
+      "enum": [
+        "AREA",
+        "MASSFLUX"
+      ],
       "description": "SU2 option: MARKER_ANALYZE_AVERAGE",
-      "default": "AVERAGE_MASSFLUX",
-      "items": {
-        "type": "string"
-      }
+      "default": "MASSFLUX"
     },
     "COMM_LEVEL": {
       "type": "string",
@@ -2740,79 +1437,80 @@
     },
     "MACH_MOTION": {
       "type": "number",
-      "description": "SU2 option: MACH_MOTION"
+      "description": "SU2 option: MACH_MOTION",
+      "default": 0.0
     },
     "MOTION_ORIGIN": {
       "type": "array",
-      "description": "SU2 option: MOTION_ORIGIN",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: MOTION_ORIGIN"
     },
     "TRANSLATION_RATE": {
       "type": "array",
-      "description": "SU2 option: TRANSLATION_RATE",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: TRANSLATION_RATE"
     },
     "ROTATION_RATE": {
       "type": "array",
-      "description": "SU2 option: ROTATION_RATE",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: ROTATION_RATE"
     },
     "PITCHING_OMEGA": {
       "type": "array",
-      "description": "SU2 option: PITCHING_OMEGA",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: PITCHING_OMEGA"
     },
     "PITCHING_AMPL": {
       "type": "array",
-      "description": "SU2 option: PITCHING_AMPL",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: PITCHING_AMPL"
     },
     "PITCHING_PHASE": {
       "type": "array",
-      "description": "SU2 option: PITCHING_PHASE",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: PITCHING_PHASE"
     },
     "PLUNGING_OMEGA": {
       "type": "array",
-      "description": "SU2 option: PLUNGING_OMEGA",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: PLUNGING_OMEGA"
     },
     "PLUNGING_AMPL": {
       "type": "array",
-      "description": "SU2 option: PLUNGING_AMPL",
       "items": {
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "description": "SU2 option: PLUNGING_AMPL"
     },
     "SURFACE_MOTION_ORIGIN": {
       "type": "array",
@@ -2871,44 +1569,56 @@
       }
     },
     "MOVE_MOTION_ORIGIN": {
-      "type": "string",
-      "description": "SU2 option: MOVE_MOTION_ORIGIN"
+      "type": "array",
+      "description": "SU2 option: MOVE_MOTION_ORIGIN",
+      "items": {
+        "type": "integer"
+      }
     },
     "FLUTTER_SPEED_INDEX": {
       "type": "number",
-      "description": "SU2 option: FLUTTER_SPEED_INDEX"
+      "description": "SU2 option: FLUTTER_SPEED_INDEX",
+      "default": 0.6
     },
     "PLUNGE_NATURAL_FREQUENCY": {
       "type": "number",
-      "description": "SU2 option: PLUNGE_NATURAL_FREQUENCY"
+      "description": "SU2 option: PLUNGE_NATURAL_FREQUENCY",
+      "default": 100
     },
     "PITCH_NATURAL_FREQUENCY": {
       "type": "number",
-      "description": "SU2 option: PITCH_NATURAL_FREQUENCY"
+      "description": "SU2 option: PITCH_NATURAL_FREQUENCY",
+      "default": 100
     },
     "AIRFOIL_MASS_RATIO": {
       "type": "number",
-      "description": "SU2 option: AIRFOIL_MASS_RATIO"
+      "description": "SU2 option: AIRFOIL_MASS_RATIO",
+      "default": 60
     },
     "CG_LOCATION": {
       "type": "number",
-      "description": "SU2 option: CG_LOCATION"
+      "description": "SU2 option: CG_LOCATION",
+      "default": 1.8
     },
     "RADIUS_GYRATION_SQUARED": {
       "type": "number",
-      "description": "SU2 option: RADIUS_GYRATION_SQUARED"
+      "description": "SU2 option: RADIUS_GYRATION_SQUARED",
+      "default": 3.48
     },
     "AEROELASTIC_ITER": {
-      "type": "string",
-      "description": "SU2 option: AEROELASTIC_ITER"
+      "type": "integer",
+      "description": "SU2 option: AEROELASTIC_ITER",
+      "default": 3
     },
     "OPT_RELAX_FACTOR": {
       "type": "number",
-      "description": "SU2 option: OPT_RELAX_FACTOR"
+      "description": "SU2 option: OPT_RELAX_FACTOR",
+      "default": 1.0
     },
     "OPT_LINE_SEARCH_BOUND": {
       "type": "number",
-      "description": "SU2 option: OPT_LINE_SEARCH_BOUND"
+      "description": "SU2 option: OPT_LINE_SEARCH_BOUND",
+      "default": 1000000.0
     },
     "WIND_GUST": {
       "type": "boolean",
@@ -2922,23 +1632,28 @@
     },
     "GUST_WAVELENGTH": {
       "type": "number",
-      "description": "SU2 option: GUST_WAVELENGTH"
+      "description": "SU2 option: GUST_WAVELENGTH",
+      "default": 0.0
     },
     "GUST_PERIODS": {
       "type": "number",
-      "description": "SU2 option: GUST_PERIODS"
+      "description": "SU2 option: GUST_PERIODS",
+      "default": 1.0
     },
     "GUST_AMPL": {
       "type": "number",
-      "description": "SU2 option: GUST_AMPL"
+      "description": "SU2 option: GUST_AMPL",
+      "default": 0.0
     },
     "GUST_BEGIN_TIME": {
       "type": "number",
-      "description": "SU2 option: GUST_BEGIN_TIME"
+      "description": "SU2 option: GUST_BEGIN_TIME",
+      "default": 0.0
     },
     "GUST_BEGIN_LOC": {
       "type": "number",
-      "description": "SU2 option: GUST_BEGIN_LOC"
+      "description": "SU2 option: GUST_BEGIN_LOC",
+      "default": 0.0
     },
     "GUST_DIR": {
       "type": "string",
@@ -2952,7 +1667,8 @@
     },
     "TURB_FIXED_VALUES_DOMAIN": {
       "type": "number",
-      "description": "SU2 option: TURB_FIXED_VALUES_DOMAIN"
+      "description": "SU2 option: TURB_FIXED_VALUES_DOMAIN",
+      "default": -1.7976931348623157e+308
     },
     "OMEGA_HB": {
       "type": "array",
@@ -2973,11 +1689,17 @@
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "default": [
+        0.0,
+        1.0,
+        1.0
+      ]
     },
     "EA_SCALE_FACTOR": {
       "type": "number",
-      "description": "SU2 option: EA_SCALE_FACTOR"
+      "description": "SU2 option: EA_SCALE_FACTOR",
+      "default": 1.0
     },
     "DV_KIND": {
       "type": "array",
@@ -2994,11 +1716,31 @@
       }
     },
     "DV_PARAM": {
-      "type": "string",
-      "description": "SU2 option: DV_PARAM"
+      "type": "array",
+      "description": "SU2 option: DV_PARAM",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
     },
     "DV_VALUE": {
-      "type": "string",
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      ],
       "description": "SU2 option: DV_VALUE"
     },
     "DV_FILENAME": {
@@ -3043,16 +1785,19 @@
       "default": false
     },
     "DEFORM_NONLINEAR_ITER": {
-      "type": "string",
-      "description": "SU2 option: DEFORM_NONLINEAR_ITER"
+      "type": "integer",
+      "description": "SU2 option: DEFORM_NONLINEAR_ITER",
+      "default": 1
     },
     "DEFORM_COEFF": {
       "type": "number",
-      "description": "SU2 option: DEFORM_COEFF"
+      "description": "SU2 option: DEFORM_COEFF",
+      "default": 1000000.0
     },
     "DEFORM_LIMIT": {
       "type": "number",
-      "description": "SU2 option: DEFORM_LIMIT"
+      "description": "SU2 option: DEFORM_LIMIT",
+      "default": 1000000.0
     },
     "DEFORM_STIFFNESS_TYPE": {
       "type": "string",
@@ -3061,15 +1806,18 @@
     },
     "DEFORM_ELASTICITY_MODULUS": {
       "type": "number",
-      "description": "SU2 option: DEFORM_ELASTICITY_MODULUS"
+      "description": "SU2 option: DEFORM_ELASTICITY_MODULUS",
+      "default": 200000000000.0
     },
     "DEFORM_POISSONS_RATIO": {
       "type": "number",
-      "description": "SU2 option: DEFORM_POISSONS_RATIO"
+      "description": "SU2 option: DEFORM_POISSONS_RATIO",
+      "default": 0.3
     },
     "DEFORM_STIFF_LAYER_SIZE": {
       "type": "number",
-      "description": "SU2 option: DEFORM_STIFF_LAYER_SIZE"
+      "description": "SU2 option: DEFORM_STIFF_LAYER_SIZE",
+      "default": 0.0
     },
     "DEFORM_LINEAR_SOLVER": {
       "type": "string",
@@ -3083,37 +1831,43 @@
     },
     "DEFORM_LINEAR_SOLVER_ERROR": {
       "type": "number",
-      "description": "SU2 option: DEFORM_LINEAR_SOLVER_ERROR"
+      "description": "SU2 option: DEFORM_LINEAR_SOLVER_ERROR",
+      "default": 1e-14
     },
     "DEFORM_LINEAR_SOLVER_ITER": {
-      "type": "string",
-      "description": "SU2 option: DEFORM_LINEAR_SOLVER_ITER"
+      "type": "integer",
+      "description": "SU2 option: DEFORM_LINEAR_SOLVER_ITER",
+      "default": 1000
     },
     "RIEMANN_SOLVER_FEM": {
       "type": "string",
       "description": "SU2 option: RIEMANN_SOLVER_FEM",
-      "default": "UPWIND::ROE"
+      "default": "ROE"
     },
     "QUADRATURE_FACTOR_STRAIGHT_FEM": {
       "type": "number",
-      "description": "SU2 option: QUADRATURE_FACTOR_STRAIGHT_FEM"
+      "description": "SU2 option: QUADRATURE_FACTOR_STRAIGHT_FEM",
+      "default": 2.0
     },
     "QUADRATURE_FACTOR_CURVED_FEM": {
       "type": "number",
-      "description": "SU2 option: QUADRATURE_FACTOR_CURVED_FEM"
+      "description": "SU2 option: QUADRATURE_FACTOR_CURVED_FEM",
+      "default": 3.0
     },
     "QUADRATURE_FACTOR_TIME_ADER_DG": {
       "type": "number",
-      "description": "SU2 option: QUADRATURE_FACTOR_TIME_ADER_DG"
+      "description": "SU2 option: QUADRATURE_FACTOR_TIME_ADER_DG",
+      "default": 2.0
     },
     "THETA_INTERIOR_PENALTY_DG_FEM": {
       "type": "number",
-      "description": "SU2 option: THETA_INTERIOR_PENALTY_DG_FEM"
+      "description": "SU2 option: THETA_INTERIOR_PENALTY_DG_FEM",
+      "default": 1.0
     },
     "COMPUTE_ENTROPY_FLUID_MODEL": {
       "type": "boolean",
       "description": "SU2 option: COMPUTE_ENTROPY_FLUID_MODEL",
-      "default": false
+      "default": true
     },
     "USE_LUMPED_MASSMATRIX_DGFEM": {
       "type": "boolean",
@@ -3126,12 +1880,14 @@
       "default": false
     },
     "ALIGNED_BYTES_MATMUL": {
-      "type": "string",
-      "description": "SU2 option: ALIGNED_BYTES_MATMUL"
+      "type": "integer",
+      "description": "SU2 option: ALIGNED_BYTES_MATMUL",
+      "default": 128
     },
     "FEA_FILENAME": {
       "type": "string",
-      "description": "SU2 option: FEA_FILENAME"
+      "description": "SU2 option: FEA_FILENAME",
+      "default": "default_element_properties.dat"
     },
     "FEA_ADVANCED_MODE": {
       "type": "boolean",
@@ -3159,24 +1915,27 @@
         "type": "number"
       }
     },
-    "MATERIAL_THERMAL_EXPANSION_COEFF": {
+    "MATERIAL_THERMAL_EXPANSION": {
       "type": "array",
-      "description": "SU2 option: MATERIAL_THERMAL_EXPANSION_COEFF",
+      "description": "SU2 option: MATERIAL_THERMAL_EXPANSION",
       "items": {
         "type": "number"
       }
     },
     "MATERIAL_REFERENCE_TEMPERATURE": {
       "type": "number",
-      "description": "SU2 option: MATERIAL_REFERENCE_TEMPERATURE"
+      "description": "SU2 option: MATERIAL_REFERENCE_TEMPERATURE",
+      "default": 288.15
     },
     "KNOWLES_B": {
       "type": "number",
-      "description": "SU2 option: KNOWLES_B"
+      "description": "SU2 option: KNOWLES_B",
+      "default": 1.0
     },
     "KNOWLES_N": {
       "type": "number",
-      "description": "SU2 option: KNOWLES_N"
+      "description": "SU2 option: KNOWLES_N",
+      "default": 1.0
     },
     "DE_EFFECTS": {
       "type": "boolean",
@@ -3216,11 +1975,13 @@
     },
     "REFERENCE_GEOMETRY_PENALTY": {
       "type": "number",
-      "description": "REFERENCE_GEOMETRY_FILENAME \\n DESCRIPTION: Reference geometry filename \\n Default: reference_geometry.dat \\ingroup Config"
+      "description": "SU2 option: REFERENCE_GEOMETRY_PENALTY",
+      "default": 1000000.0
     },
     "REFERENCE_GEOMETRY_FILENAME": {
       "type": "string",
-      "description": "SU2 option: REFERENCE_GEOMETRY_FILENAME"
+      "description": "SU2 option: REFERENCE_GEOMETRY_FILENAME",
+      "default": "reference_geometry.dat"
     },
     "REFERENCE_GEOMETRY_FORMAT": {
       "type": "string",
@@ -3233,8 +1994,9 @@
       "default": false
     },
     "REFERENCE_NODE": {
-      "type": "string",
-      "description": "SU2 option: REFERENCE_NODE"
+      "type": "integer",
+      "description": "SU2 option: REFERENCE_NODE",
+      "default": 0
     },
     "REFERENCE_NODE_DISPLACEMENT": {
       "type": "array",
@@ -3245,11 +2007,13 @@
     },
     "REFERENCE_NODE_PENALTY": {
       "type": "number",
-      "description": "TOTAL_DV_PENALTY\\n DESCRIPTION: Penalty weight value to maintain the total sum of DV constant \\ingroup Config"
+      "description": "SU2 option: REFERENCE_NODE_PENALTY",
+      "default": 1000.0
     },
     "TOTAL_DV_PENALTY": {
       "type": "number",
-      "description": "STRESS_PENALTY_PARAM\\n DESCRIPTION: Maximum allowed stress and KS exponent for structural optimization \\ingroup Config"
+      "description": "SU2 option: TOTAL_DV_PENALTY",
+      "default": 0.0
     },
     "STRESS_PENALTY_PARAM": {
       "type": "array",
@@ -3263,17 +2027,17 @@
     "GEOMETRIC_CONDITIONS": {
       "type": "string",
       "description": "SU2 option: GEOMETRIC_CONDITIONS",
-      "default": "STRUCT_DEFORMATION::SMALL"
+      "default": "SMALL"
     },
     "MATERIAL_MODEL": {
       "type": "string",
       "description": "SU2 option: MATERIAL_MODEL",
-      "default": "STRUCT_MODEL::LINEAR_ELASTIC"
+      "default": "LINEAR_ELASTIC"
     },
     "MATERIAL_COMPRESSIBILITY": {
       "type": "string",
       "description": "SU2 option: MATERIAL_COMPRESSIBILITY",
-      "default": "STRUCT_COMPRESS::COMPRESSIBLE"
+      "default": "COMPRESSIBLE"
     },
     "PRESTRETCH": {
       "type": "boolean",
@@ -3282,17 +2046,18 @@
     },
     "PRESTRETCH_FILENAME": {
       "type": "string",
-      "description": "SU2 option: PRESTRETCH_FILENAME"
+      "description": "SU2 option: PRESTRETCH_FILENAME",
+      "default": "prestretch_file.dat"
     },
     "NONLINEAR_FEM_SOLUTION_METHOD": {
       "type": "string",
       "description": "SU2 option: NONLINEAR_FEM_SOLUTION_METHOD",
-      "default": "STRUCT_SPACE_ITE::NEWTON"
+      "default": "NEWTON"
     },
     "FORMULATION_ELASTICITY_2D": {
       "type": "string",
       "description": "SU2 option: FORMULATION_ELASTICITY_2D",
-      "default": "STRUCT_2DFORM::PLANE_STRAIN"
+      "default": "PLANE_STRAIN"
     },
     "CENTRIFUGAL_FORCE": {
       "type": "boolean",
@@ -3306,11 +2071,13 @@
     },
     "NEWMARK_BETA": {
       "type": "number",
-      "description": "SU2 option: NEWMARK_BETA"
+      "description": "SU2 option: NEWMARK_BETA",
+      "default": 0.25
     },
     "NEWMARK_GAMMA": {
       "type": "number",
-      "description": "SU2 option: NEWMARK_GAMMA"
+      "description": "SU2 option: NEWMARK_GAMMA",
+      "default": 0.5
     },
     "RAMP_LOADING": {
       "type": "boolean",
@@ -3319,7 +2086,8 @@
     },
     "RAMP_TIME": {
       "type": "number",
-      "description": "SU2 option: RAMP_TIME"
+      "description": "SU2 option: RAMP_TIME",
+      "default": 1.0
     },
     "DYNAMIC_LOAD_TRANSFER": {
       "type": "string",
@@ -3339,8 +2107,9 @@
       "default": false
     },
     "NUMBER_INCREMENTS": {
-      "type": "string",
-      "description": "SU2 option: NUMBER_INCREMENTS"
+      "type": "integer",
+      "description": "SU2 option: NUMBER_INCREMENTS",
+      "default": 10
     },
     "INCREMENTAL_CRITERIA": {
       "type": "array",
@@ -3348,8 +2117,11 @@
       "items": {
         "type": "number"
       },
-      "minItems": 3,
-      "maxItems": 3
+      "default": [
+        0.0,
+        0.0,
+        0.0
+      ]
     },
     "PREDICTOR": {
       "type": "boolean",
@@ -3357,8 +2129,9 @@
       "default": false
     },
     "PREDICTOR_ORDER": {
-      "type": "string",
-      "description": "SU2 option: PREDICTOR_ORDER"
+      "type": "integer",
+      "description": "SU2 option: PREDICTOR_ORDER",
+      "default": 0
     },
     "TOPOLOGY_OPTIMIZATION": {
       "type": "boolean",
@@ -3367,15 +2140,18 @@
     },
     "TOPOL_OPTIM_OUTFILE": {
       "type": "string",
-      "description": "SU2 option: TOPOL_OPTIM_OUTFILE"
+      "description": "SU2 option: TOPOL_OPTIM_OUTFILE",
+      "default": "element_derivatives.dat"
     },
     "TOPOL_OPTIM_SIMP_EXPONENT": {
       "type": "number",
-      "description": "SU2 option: TOPOL_OPTIM_SIMP_EXPONENT"
+      "description": "SU2 option: TOPOL_OPTIM_SIMP_EXPONENT",
+      "default": 1.0
     },
     "TOPOL_OPTIM_SIMP_MINSTIFF": {
       "type": "number",
-      "description": "SU2 option: TOPOL_OPTIM_SIMP_MINSTIFF"
+      "description": "SU2 option: TOPOL_OPTIM_SIMP_MINSTIFF",
+      "default": 0.001
     },
     "TOPOL_OPTIM_FILTER_KERNEL": {
       "type": "array",
@@ -3399,21 +2175,24 @@
       }
     },
     "TOPOL_OPTIM_SEARCH_LIMIT": {
-      "type": "string",
-      "description": "SU2 option: TOPOL_OPTIM_SEARCH_LIMIT"
+      "type": "integer",
+      "description": "SU2 option: TOPOL_OPTIM_SEARCH_LIMIT",
+      "default": 0
     },
     "TOPOL_OPTIM_PROJECTION_TYPE": {
       "type": "string",
       "description": "SU2 option: TOPOL_OPTIM_PROJECTION_TYPE",
-      "default": "ENUM_PROJECTION_FUNCTION::NONE"
+      "default": "NONE"
     },
     "TOPOL_OPTIM_PROJECTION_PARAM": {
       "type": "number",
-      "description": "SU2 option: TOPOL_OPTIM_PROJECTION_PARAM"
+      "description": "SU2 option: TOPOL_OPTIM_PROJECTION_PARAM",
+      "default": 0.0
     },
     "FEA_ID_DIRECTDIFF": {
-      "type": "string",
-      "description": "SU2 option: FEA_ID_DIRECTDIFF"
+      "type": "integer",
+      "description": "SU2 option: FEA_ID_DIRECTDIFF",
+      "default": 0
     },
     "RESTART_STEADY_STATE": {
       "type": "boolean",
@@ -3433,35 +2212,50 @@
       "default": false
     },
     "OUTER_ITER": {
-      "type": "string",
-      "description": "SU2 option: OUTER_ITER"
+      "type": "integer",
+      "description": "SU2 option: OUTER_ITER",
+      "default": 1
     },
     "INNER_ITER": {
-      "type": "string",
-      "description": "SU2 option: INNER_ITER"
+      "type": "integer",
+      "description": "SU2 option: INNER_ITER",
+      "default": 1
     },
     "TIME_ITER": {
-      "type": "string",
-      "description": "SU2 option: TIME_ITER"
+      "type": "integer",
+      "description": "SU2 option: TIME_ITER",
+      "default": 1
     },
     "ITER": {
-      "type": "string",
-      "description": "SU2 option: ITER"
+      "type": "integer",
+      "description": "SU2 option: ITER",
+      "default": 1000
     },
     "RESTART_ITER": {
+      "type": "integer",
+      "description": "SU2 option: RESTART_ITER",
+      "default": 1
+    },
+    "TIME_MARCHING": {
       "type": "string",
-      "description": "SU2 option: RESTART_ITER"
+      "enum": [
+        "STEADY",
+        "TIME_STEPPING",
+        "DUAL_TIME_STEPPING-1ST_ORDER",
+        "DUAL_TIME_STEPPING-2ND_ORDER",
+        "HARMONIC_BALANCE"
+      ],
+      "description": "Time marching strategy (options from TimeMarching_Map). Default: STEADY",
+      "default": "STEADY"
     },
     "TIME_STEP": {
       "type": "number",
-      "description": "Time step for time-accurate simulations",
-      "minimum": 0,
+      "description": "SU2 option: TIME_STEP",
       "default": 0.0
     },
     "MAX_TIME": {
       "type": "number",
-      "description": "Maximum physical time for time-accurate simulations",
-      "minimum": 0,
+      "description": "SU2 option: MAX_TIME",
       "default": 1.0
     },
     "SPECIAL_OUTPUT": {
@@ -3487,44 +2281,47 @@
     "KIND_INTERPOLATION": {
       "type": "string",
       "description": "SU2 option: KIND_INTERPOLATION",
-      "default": "INTERFACE_INTERPOLATOR::NEAREST_NEIGHBOR"
+      "default": "NEAREST_NEIGHBOR"
     },
     "CONSERVATIVE_INTERPOLATION": {
       "type": "boolean",
       "description": "SU2 option: CONSERVATIVE_INTERPOLATION",
-      "default": false
+      "default": true
     },
     "NUM_NEAREST_NEIGHBORS": {
-      "type": "string",
-      "description": "SU2 option: NUM_NEAREST_NEIGHBORS"
+      "type": "integer",
+      "description": "SU2 option: NUM_NEAREST_NEIGHBORS",
+      "default": 1
     },
     "KIND_RADIAL_BASIS_FUNCTION": {
       "type": "string",
       "description": "SU2 option: KIND_RADIAL_BASIS_FUNCTION",
-      "default": "RADIAL_BASIS::WENDLAND_C2"
+      "default": "WENDLAND_C2"
     },
     "RADIAL_BASIS_FUNCTION_POLYNOMIAL_TERM": {
       "type": "boolean",
       "description": "SU2 option: RADIAL_BASIS_FUNCTION_POLYNOMIAL_TERM",
-      "default": false
+      "default": true
     },
     "RADIAL_BASIS_FUNCTION_PARAMETER": {
       "type": "number",
-      "description": "SU2 option: RADIAL_BASIS_FUNCTION_PARAMETER"
+      "description": "SU2 option: RADIAL_BASIS_FUNCTION_PARAMETER",
+      "default": 1.0
     },
     "RADIAL_BASIS_FUNCTION_PRUNE_TOLERANCE": {
       "type": "number",
-      "description": "SU2 option: RADIAL_BASIS_FUNCTION_PRUNE_TOLERANCE"
+      "description": "SU2 option: RADIAL_BASIS_FUNCTION_PRUNE_TOLERANCE",
+      "default": 1e-06
     },
     "INLET_INTERPOLATION_FUNCTION": {
       "type": "string",
       "description": "SU2 option: INLET_INTERPOLATION_FUNCTION",
-      "default": "INLET_SPANWISE_INTERP::NONE"
+      "default": "NONE"
     },
     "INLET_INTERPOLATION_DATA_TYPE": {
       "type": "string",
       "description": "SU2 option: INLET_INTERPOLATION_DATA_TYPE",
-      "default": "INLET_INTERP_TYPE::VR_VTHETA"
+      "default": "VR_VTHETA"
     },
     "PRINT_INLET_INTERPOLATED_DATA": {
       "type": "boolean",
@@ -3532,25 +2329,29 @@
       "default": false
     },
     "RAMP_FSI_ITER": {
-      "type": "string",
-      "description": "SU2 option: RAMP_FSI_ITER"
+      "type": "integer",
+      "description": "SU2 option: RAMP_FSI_ITER",
+      "default": 2
     },
     "STAT_RELAX_PARAMETER": {
       "type": "number",
-      "description": "SU2 option: STAT_RELAX_PARAMETER"
+      "description": "SU2 option: STAT_RELAX_PARAMETER",
+      "default": 0.4
     },
     "AITKEN_DYN_MAX_INITIAL": {
       "type": "number",
-      "description": "SU2 option: AITKEN_DYN_MAX_INITIAL"
+      "description": "SU2 option: AITKEN_DYN_MAX_INITIAL",
+      "default": 0.5
     },
     "AITKEN_DYN_MIN_INITIAL": {
       "type": "number",
-      "description": "SU2 option: AITKEN_DYN_MIN_INITIAL"
+      "description": "SU2 option: AITKEN_DYN_MIN_INITIAL",
+      "default": 0.5
     },
     "BGS_RELAXATION": {
       "type": "string",
       "description": "SU2 option: BGS_RELAXATION",
-      "default": "BGS_RELAXATION::NONE"
+      "default": "NONE"
     },
     "RELAXATION": {
       "type": "boolean",
@@ -3560,20 +2361,22 @@
     "RADIATION_MODEL": {
       "type": "string",
       "description": "SU2 option: RADIATION_MODEL",
-      "default": "RADIATION_MODEL::NONE"
+      "default": "NONE"
     },
     "P1_INITIALIZATION": {
       "type": "string",
       "description": "SU2 option: P1_INITIALIZATION",
-      "default": "P1_INIT::TEMPERATURE"
+      "default": "TEMPERATURE"
     },
     "ABSORPTION_COEFF": {
       "type": "number",
-      "description": "SU2 option: ABSORPTION_COEFF"
+      "description": "SU2 option: ABSORPTION_COEFF",
+      "default": 1.0
     },
     "SCATTERING_COEFF": {
       "type": "number",
-      "description": "SU2 option: SCATTERING_COEFF"
+      "description": "SU2 option: SCATTERING_COEFF",
+      "default": 0.0
     },
     "HEAT_SOURCE": {
       "type": "boolean",
@@ -3582,11 +2385,13 @@
     },
     "HEAT_SOURCE_VAL": {
       "type": "number",
-      "description": "SU2 option: HEAT_SOURCE_VAL"
+      "description": "SU2 option: HEAT_SOURCE_VAL",
+      "default": 0.0
     },
     "HEAT_SOURCE_ROTATION_Z": {
       "type": "number",
-      "description": "SU2 option: HEAT_SOURCE_ROTATION_Z"
+      "description": "SU2 option: HEAT_SOURCE_ROTATION_Z",
+      "default": 0.0
     },
     "HEAT_SOURCE_CENTER": {
       "type": "array",
@@ -3595,7 +2400,12 @@
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "default": [
+        0.0,
+        0.0,
+        0.0
+      ]
     },
     "HEAT_SOURCE_AXES": {
       "type": "array",
@@ -3604,27 +2414,41 @@
         "type": "number"
       },
       "minItems": 3,
-      "maxItems": 3
+      "maxItems": 3,
+      "default": [
+        1.0,
+        1.0,
+        1.0
+      ]
     },
     "MARKER_EMISSIVITY": {
       "type": "array",
       "description": "SU2 option: MARKER_EMISSIVITY",
       "items": {
-        "type": "string"
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
       }
     },
     "CFL_NUMBER_RAD": {
       "type": "number",
-      "description": "SU2 option: CFL_NUMBER_RAD"
+      "description": "SU2 option: CFL_NUMBER_RAD",
+      "default": 1.0
     },
     "CHT_COUPLING_METHOD": {
       "type": "string",
       "description": "SU2 option: CHT_COUPLING_METHOD",
-      "default": "CHT_COUPLING::DIRECT_TEMPERATURE_ROBIN_HEATFLUX"
+      "default": "DIRECT_TEMPERATURE_ROBIN_HEATFLUX"
     },
     "VISUALIZE_CV": {
       "type": "integer",
-      "description": "SU2 option: VISUALIZE_CV"
+      "description": "SU2 option: VISUALIZE_CV",
+      "default": -1
     },
     "INV_DESIGN_CP": {
       "type": "boolean",
@@ -3642,20 +2466,30 @@
       "default": false
     },
     "EXTRA_HEAT_ZONE_OUTPUT": {
-      "type": "integer",
-      "description": "SU2 option: EXTRA_HEAT_ZONE_OUTPUT"
+      "type": "number",
+      "description": "SU2 option: EXTRA_HEAT_ZONE_OUTPUT",
+      "default": -1
     },
     "FFD_FIX_I": {
-      "type": "string",
-      "description": "SU2 option: FFD_FIX_I"
+      "type": "array",
+      "description": "SU2 option: FFD_FIX_I",
+      "items": {
+        "type": "integer"
+      }
     },
     "FFD_FIX_J": {
-      "type": "string",
-      "description": "SU2 option: FFD_FIX_J"
+      "type": "array",
+      "description": "SU2 option: FFD_FIX_J",
+      "items": {
+        "type": "integer"
+      }
     },
     "FFD_FIX_K": {
-      "type": "string",
-      "description": "SU2 option: FFD_FIX_K"
+      "type": "array",
+      "description": "SU2 option: FFD_FIX_K",
+      "items": {
+        "type": "integer"
+      }
     },
     "FFD_SYMMETRY_PLANE": {
       "type": "boolean",
@@ -3672,17 +2506,17 @@
       "description": "SU2 option: FFD_AXIS",
       "items": {
         "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
+      }
     },
     "FFD_ITERATIONS": {
-      "type": "string",
-      "description": "SU2 option: FFD_ITERATIONS"
+      "type": "integer",
+      "description": "SU2 option: FFD_ITERATIONS",
+      "default": 500
     },
     "FFD_TOLERANCE": {
       "type": "number",
-      "description": "SU2 option: FFD_TOLERANCE"
+      "description": "SU2 option: FFD_TOLERANCE",
+      "default": 1e-10
     },
     "FFD_INTPREV": {
       "type": "boolean",
@@ -3690,12 +2524,14 @@
       "default": false
     },
     "FFD_INTPREV_ITER": {
-      "type": "string",
-      "description": "SU2 option: FFD_INTPREV_ITER"
+      "type": "integer",
+      "description": "SU2 option: FFD_INTPREV_ITER",
+      "default": 10
     },
     "FFD_INTPREV_DEPTH": {
-      "type": "string",
-      "description": "SU2 option: FFD_INTPREV_DEPTH"
+      "type": "integer",
+      "description": "SU2 option: FFD_INTPREV_DEPTH",
+      "default": 3
     },
     "CONVEXITY_CHECK": {
       "type": "boolean",
@@ -3703,20 +2539,35 @@
       "default": false
     },
     "CONVEXITY_CHECK_ITER": {
-      "type": "string",
-      "description": "SU2 option: CONVEXITY_CHECK_ITER"
+      "type": "integer",
+      "description": "SU2 option: CONVEXITY_CHECK_ITER",
+      "default": 10
     },
     "CONVEXITY_CHECK_DEPTH": {
-      "type": "string",
-      "description": "SU2 option: CONVEXITY_CHECK_DEPTH"
+      "type": "integer",
+      "description": "SU2 option: CONVEXITY_CHECK_DEPTH",
+      "default": 3
     },
     "FFD_DEFINITION": {
-      "type": "string",
-      "description": "SU2 option: FFD_DEFINITION"
+      "type": "array",
+      "description": "SU2 option: FFD_DEFINITION",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
     },
     "FFD_DEGREE": {
-      "type": "string",
-      "description": "SU2 option: FFD_DEGREE"
+      "type": "array",
+      "description": "SU2 option: FFD_DEGREE",
+      "items": {
+        "type": "integer"
+      }
     },
     "FFD_CONTINUITY": {
       "type": "string",
@@ -3733,9 +2584,7 @@
       "description": "SU2 option: FFD_BSPLINE_ORDER",
       "items": {
         "type": "number"
-      },
-      "minItems": 3,
-      "maxItems": 3
+      }
     },
     "DIRECT_DIFF": {
       "type": "string",
@@ -3750,7 +2599,7 @@
     "PREACC": {
       "type": "boolean",
       "description": "SU2 option: PREACC",
-      "default": false
+      "default": true
     },
     "GRADIENT_METHOD": {
       "type": "string",
@@ -3809,15 +2658,36 @@
       "description": "SU2 option: DECOMPOSED"
     },
     "OPT_GRADIENT_FACTOR": {
-      "type": "string",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        }
+      ],
       "description": "SU2 option: OPT_GRADIENT_FACTOR"
     },
     "OPT_BOUND_UPPER": {
-      "type": "string",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        }
+      ],
       "description": "SU2 option: OPT_BOUND_UPPER"
     },
     "OPT_BOUND_LOWER": {
-      "type": "string",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        }
+      ],
       "description": "SU2 option: OPT_BOUND_LOWER"
     },
     "NZONES": {
@@ -3826,28 +2696,33 @@
     },
     "PARMETIS_TOLERANCE": {
       "type": "number",
-      "description": "SU2 option: PARMETIS_TOLERANCE"
+      "description": "SU2 option: PARMETIS_TOLERANCE",
+      "default": 0.02
     },
     "PARMETIS_POINT_WEIGHT": {
-      "type": "integer",
-      "description": "SU2 option: PARMETIS_POINT_WEIGHT"
+      "type": "number",
+      "description": "SU2 option: PARMETIS_POINT_WEIGHT",
+      "default": 0
     },
     "PARMETIS_EDGE_WEIGHT": {
-      "type": "integer",
-      "description": "SU2 option: PARMETIS_EDGE_WEIGHT"
+      "type": "number",
+      "description": "SU2 option: PARMETIS_EDGE_WEIGHT",
+      "default": 1
     },
     "WINDOW_START_ITER": {
-      "type": "string",
-      "description": "SU2 option: WINDOW_START_ITER"
+      "type": "integer",
+      "description": "SU2 option: WINDOW_START_ITER",
+      "default": 0
     },
     "WINDOW_FUNCTION": {
       "type": "string",
       "description": "SU2 option: WINDOW_FUNCTION",
-      "default": "WINDOW_FUNCTION::SQUARE"
+      "default": "SQUARE"
     },
     "DES_CONST": {
       "type": "number",
-      "description": "SU2 option: DES_CONST"
+      "description": "SU2 option: DES_CONST",
+      "default": 0.65
     },
     "HYBRID_RANSLES": {
       "type": "string",
@@ -3926,31 +2801,47 @@
       }
     },
     "HISTORY_WRT_FREQ_INNER": {
-      "type": "string",
-      "description": "SU2 option: HISTORY_WRT_FREQ_INNER"
+      "type": "integer",
+      "description": "SU2 option: HISTORY_WRT_FREQ_INNER",
+      "default": 1
     },
     "HISTORY_WRT_FREQ_OUTER": {
-      "type": "string",
-      "description": "SU2 option: HISTORY_WRT_FREQ_OUTER"
+      "type": "integer",
+      "description": "SU2 option: HISTORY_WRT_FREQ_OUTER",
+      "default": 1
     },
     "HISTORY_WRT_FREQ_TIME": {
-      "type": "string",
-      "description": "SU2 option: HISTORY_WRT_FREQ_TIME"
+      "type": "integer",
+      "description": "SU2 option: HISTORY_WRT_FREQ_TIME",
+      "default": 1
     },
     "SCREEN_WRT_FREQ_INNER": {
-      "type": "string",
-      "description": "SU2 option: SCREEN_WRT_FREQ_INNER"
+      "type": "integer",
+      "description": "SU2 option: SCREEN_WRT_FREQ_INNER",
+      "default": 1
     },
     "SCREEN_WRT_FREQ_OUTER": {
-      "type": "string",
-      "description": "SU2 option: SCREEN_WRT_FREQ_OUTER"
+      "type": "integer",
+      "description": "SU2 option: SCREEN_WRT_FREQ_OUTER",
+      "default": 1
     },
     "SCREEN_WRT_FREQ_TIME": {
-      "type": "string",
-      "description": "SU2 option: SCREEN_WRT_FREQ_TIME"
+      "type": "integer",
+      "description": "SU2 option: SCREEN_WRT_FREQ_TIME",
+      "default": 1
     },
     "OUTPUT_WRT_FREQ": {
-      "type": "string",
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      ],
       "description": "SU2 option: OUTPUT_WRT_FREQ"
     },
     "OUTPUT_FILES": {
@@ -3962,15 +2853,18 @@
     },
     "UQ_DELTA_B": {
       "type": "number",
-      "description": "SU2 option: UQ_DELTA_B"
+      "description": "SU2 option: UQ_DELTA_B",
+      "default": 1.0
     },
     "UQ_COMPONENT": {
-      "type": "string",
-      "description": "SU2 option: UQ_COMPONENT"
+      "type": "integer",
+      "description": "SU2 option: UQ_COMPONENT",
+      "default": 1
     },
     "UQ_URLX": {
       "type": "number",
-      "description": "SU2 option: UQ_URLX"
+      "description": "SU2 option: UQ_URLX",
+      "default": 0.1
     },
     "UQ_PERMUTE": {
       "type": "boolean",
@@ -3978,25 +2872,29 @@
       "default": false
     },
     "PASTIX_FACTORIZATION_FREQUENCY": {
-      "type": "string",
-      "description": "SU2 option: PASTIX_FACTORIZATION_FREQUENCY"
+      "type": "integer",
+      "description": "SU2 option: PASTIX_FACTORIZATION_FREQUENCY",
+      "default": 1
     },
     "PASTIX_VERBOSITY_LEVEL": {
-      "type": "string",
-      "description": "SU2 option: PASTIX_VERBOSITY_LEVEL"
+      "type": "integer",
+      "description": "SU2 option: PASTIX_VERBOSITY_LEVEL",
+      "default": 0
     },
     "PASTIX_FILL_LEVEL": {
-      "type": "string",
-      "description": "SU2 option: PASTIX_FILL_LEVEL"
+      "type": "integer",
+      "description": "SU2 option: PASTIX_FILL_LEVEL",
+      "default": 1
     },
     "EDGE_COLORING_GROUP_SIZE": {
-      "type": "string",
-      "description": "SU2 option: EDGE_COLORING_GROUP_SIZE"
+      "type": "integer",
+      "description": "SU2 option: EDGE_COLORING_GROUP_SIZE",
+      "default": 512
     },
     "EDGE_COLORING_RELAX_DISC_ADJ": {
       "type": "boolean",
       "description": "SU2 option: EDGE_COLORING_RELAX_DISC_ADJ",
-      "default": false
+      "default": true
     },
     "SAVE_LIBROM": {
       "type": "boolean",
@@ -4005,21 +2903,546 @@
     },
     "LIBROM_BASE_FILENAME": {
       "type": "string",
-      "description": "SU2 option: LIBROM_BASE_FILENAME"
+      "description": "SU2 option: LIBROM_BASE_FILENAME",
+      "default": "su2"
     },
     "BASIS_GENERATION": {
       "type": "string",
       "description": "SU2 option: BASIS_GENERATION",
-      "default": "POD_KIND::STATIC"
+      "default": "STATIC"
     },
     "MAX_BASIS_DIM": {
-      "type": "string",
-      "description": "SU2 option: MAX_BASIS_DIM"
+      "type": "integer",
+      "description": "SU2 option: MAX_BASIS_DIM",
+      "default": 100
     },
     "ROM_SAVE_FREQ": {
+      "type": "integer",
+      "description": "SU2 option: ROM_SAVE_FREQ",
+      "default": 1
+    },
+    "MESH_BOX_POLY_SOL_FEM": {
+      "type": "boolean",
+      "description": "SU2 option: MESH_BOX_POLY_SOL_FEM",
+      "default": false
+    },
+    "GEO_DESCRIPTION": {
       "type": "string",
-      "description": "SU2 option: ROM_SAVE_FREQ"
+      "description": "SU2 option: GEO_DESCRIPTION",
+      "default": ""
+    },
+    "MESH_FORMAT": {
+      "type": "string",
+      "enum": [
+        "SU2",
+        "CGNS",
+        "NETCDF_ASCII",
+        "RECTANGLE",
+        "BOX"
+      ],
+      "description": "Mesh input format including geometric primitives",
+      "default": "SU2"
+    },
+    "MARKER_ACTDISK_BEM": {
+      "type": "array",
+      "description": "SU2 option: MARKER_ACTDISK_BEM - Actuator disk BEM boundary markers",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "MARKER_PYTHON": {
+      "type": "array",
+      "description": "SU2 option: MARKER_PYTHON - Python script boundary markers",
+      "items": {
+        "type": "string"
+      }
+    },
+    "PYTHON_OPTION": {
+      "type": "string",
+      "description": "SU2 option: PYTHON_OPTION - Python script configuration",
+      "default": ""
+    },
+    "MARKER_EXHAUST": {
+      "type": "array",
+      "description": "SU2 option: MARKER_EXHAUST - Exhaust boundary markers",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "CONVECT_FEM_OPTION": {
+      "type": "string",
+      "description": "SU2 option: CONVECT_FEM_OPTION - Convective FEM method",
+      "default": "NONE"
+    },
+    "MARKER_TURBOMACHINERY": {
+      "type": "array",
+      "description": "SU2 option: MARKER_TURBOMACHINERY - Turbomachinery boundary markers",
+      "items": {
+        "type": "string"
+      }
+    },
+    "MARKER_GILES": {
+      "type": "array",
+      "description": "SU2 option: MARKER_GILES - Giles boundary condition markers",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "MARKER_DISPLACEMENT": {
+      "type": "array",
+      "description": "SU2 option: MARKER_DISPLACEMENT - Displacement boundary markers",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "MARKER_LOAD": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single load marker definition: [marker_name, load_value, load_multiplier, load_dir_x, load_dir_y, load_dir_z]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Load value, multiplier, or direction component"
+              }
+            ]
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "description": "Multiple load markers, each with definition: [marker_name, load_value, load_multiplier, load_dir_x, load_dir_y, load_dir_z]",
+          "items": {
+            "type": "array",
+            "description": "Single load marker definition",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Load value, multiplier, or direction component"
+                }
+              ]
+            },
+            "minItems": 6,
+            "maxItems": 6
+          }
+        }
+      ]
+    },
+    "MARKER_FLOWLOAD": {
+      "type": "array",
+      "description": "SU2 option: MARKER_FLOWLOAD - Flow load boundary markers",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          }
+        ]
+      }
+    },
+    "CP_POLYCOEFFS": {
+      "type": "array",
+      "description": "Polynomial coefficients for specific heat at constant pressure. Fixed-size array for INC_IDEAL_GAS_POLY fluid model.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "MU_POLYCOEFFS": {
+      "type": "array",
+      "description": "Polynomial coefficients for dynamic viscosity. Fixed-size array for polynomial viscosity model.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "KT_POLYCOEFFS": {
+      "type": "array",
+      "description": "Polynomial coefficients for thermal conductivity. Fixed-size array for polynomial conductivity model.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "JST_SENSOR_COEFF": {
+      "type": "array",
+      "description": "2nd and 4th order artificial dissipation coefficients for the JST method. Fixed-size array with 2 elements.",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "ADJ_JST_SENSOR_COEFF": {
+      "type": "array",
+      "description": "2nd and 4th order artificial dissipation coefficients for the adjoint JST method. Fixed-size array with 2 elements.",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "GEO_BOUNDS": {
+      "type": "array",
+      "description": "Bounds for geometry evaluation. Fixed-size array with 2 elements [lower_bound, upper_bound].",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "SPECIES_INIT": {
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Initial value for scalar transport (single value applied to all species)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        {
+          "type": "array",
+          "description": "Initial values for scalar transport. Variable-length array based on number of species.",
+          "items": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        }
+      ]
+    },
+    "SPECIES_CLIPPING_MAX": {
+      "type": "array",
+      "description": "Maximum values for species clipping. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "SPECIES_CLIPPING_MIN": {
+      "type": "array",
+      "description": "Minimum values for species clipping. Variable-length array based on number of species.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      }
+    },
+    "SUBSONIC_ENGINE_VALUES": {
+      "type": "array",
+      "description": "Subsonic engine boundary values. Fixed-size array with 5 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "SUBSONIC_ENGINE_CYL": {
+      "type": "array",
+      "description": "Subsonic engine cylinder values. Fixed-size array with 7 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "DISTORTION_RACK": {
+      "type": "array",
+      "description": "Distortion rack parameters. Fixed-size array with 2 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "NEWTON_KRYLOV_DPARAM": {
+      "type": "array",
+      "description": "Newton-Krylov double parameters. Variable-length array for Newton-Krylov solver parameters.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "GILES_EXTRA_RELAXFACTOR": {
+      "type": "array",
+      "description": "Giles boundary condition extra relaxation factor. Fixed-size array with 2 elements.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "MIXEDOUT_COEFF": {
+      "type": "array",
+      "description": "Mixed-out boundary condition coefficients. Fixed-size array with 3 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "RAMP_ROTATING_FRAME_COEFF": {
+      "type": "array",
+      "description": "Ramp rotating frame coefficients. Fixed-size array with 3 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "RAMP_OUTLET_PRESSURE_COEFF": {
+      "type": "array",
+      "description": "Ramp outlet pressure coefficients. Fixed-size array with 3 elements.",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "SINE_LOAD_COEFF": {
+      "type": "array",
+      "description": "Sine load coefficients. Fixed-size array with 3 elements: [amplitude, frequency, phase_in_radians].",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "INC_VELOCITY_INIT": {
+      "type": "array",
+      "description": "Initial velocity for incompressible flows. Fixed-size array with 3 components (1.0,0,0 m/s by default)",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [
+        1.0,
+        0.0,
+        0.0
+      ]
+    },
+    "CONSTANT_LEWIS_NUMBER": {
+      "oneOf": [
+        {
+          "type": "number",
+          "description": "Constant Lewis number (single value applied to all species)",
+          "minimum": 0
+        },
+        {
+          "type": "array",
+          "description": "Constant Lewis numbers for each species. Variable-length array based on number of species + 1.",
+          "items": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      ]
+    },
+    "FLAME_INIT_METHOD": {
+      "type": "string",
+      "description": "Ignition method for flamelet solver. Default: no ignition; cold flow only.",
+      "enum": [
+        "NONE",
+        "SPARK",
+        "PATCH",
+        "OTHER"
+      ],
+      "default": "NONE"
+    },
+    "FLAME_INIT": {
+      "type": "array",
+      "description": "Flame front initialization using the flamelet model. Variable-length array.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "SPARK_INIT": {
+      "type": "array",
+      "description": "Spark initialization parameters for flamelet model. Variable-length array.",
+      "items": {
+        "type": "number"
+      }
+    },
+    "SPARK_REACTION_RATES": {
+      "type": "array",
+      "description": "Spark reaction rates for flamelet model. Variable-length array.",
+      "items": {
+        "type": "number",
+        "minimum": 0
+      }
+    },
+    "MARKER_PERIODIC": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single periodic boundary marker pair: [marker1, marker2, rotcenter_x, rotcenter_y, rotcenter_z, rotangle_x, rotangle_y, rotangle_z, translation_x, translation_y, translation_z]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Rotation center, angle, or translation component"
+              }
+            ]
+          },
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "description": "Multiple periodic boundary marker pairs",
+          "items": {
+            "type": "array",
+            "description": "Single periodic boundary marker pair",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Rotation center, angle, or translation component"
+                }
+              ]
+            },
+            "minItems": 11,
+            "maxItems": 11
+          }
+        }
+      ]
+    },
+    "MARKER_HEATTRANSFER": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single heat transfer marker: [marker_name, heat_transfer_coeff, wall_temperature]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Heat transfer coefficient or wall temperature"
+              }
+            ]
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "description": "Multiple heat transfer markers",
+          "items": {
+            "type": "array",
+            "description": "Single heat transfer marker",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Heat transfer coefficient or wall temperature"
+                }
+              ]
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      ]
+    },
+    "MARKER_ENGINE_EXHAUST": {
+      "oneOf": [
+        {
+          "type": "array",
+          "description": "Single engine exhaust marker: [marker_name, temperature_target, pressure_target]",
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "Marker name"
+              },
+              {
+                "type": "number",
+                "description": "Temperature or pressure target"
+              }
+            ]
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "description": "Multiple engine exhaust markers",
+          "items": {
+            "type": "array",
+            "description": "Single engine exhaust marker",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "Marker name"
+                },
+                {
+                  "type": "number",
+                  "description": "Temperature or pressure target"
+                }
+              ]
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      ]
     }
-  },
-  "additionalProperties": true
-}
+  }

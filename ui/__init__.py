@@ -1,3 +1,3 @@
-"""
-UI components for SU2GUI.
-"""
+
+# UI components for SU2GUI.
+

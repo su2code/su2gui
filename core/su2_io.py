@@ -1,17 +1,44 @@
-import vtk
 import sys
 import os
+import json
 from pathlib import Path
+
+# Try to import VTK (optional for validation functions)
+try:
+    import vtk
+    VTK_AVAILABLE = True
+except ImportError:
+    VTK_AVAILABLE = False
 
 # Add parent directory to path to allow importing from sibling directories
 parent_dir = str(Path(__file__).parent.parent.absolute())
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
-from core.su2_json import *
-from core.logger import log
+try:
+    from core.su2_json import *
+except ImportError:
+    pass
 
-from core.su2_py_wrapper import save_json_cfg_py_file
+try:
+    from core.logger import log
+except ImportError:
+    # Fallback logging function
+    def log(level, message):
+        print(f"[{level.upper()}] {message}")
+
+try:
+    from core.su2_py_wrapper import save_json_cfg_py_file
+except ImportError:
+    pass
+
+# Import validation functions
+try:
+    from test_validation import cfg_to_json_dict, validate_cfg_with_schema, apply_su2_fixes, apply_schema_fixes
+    VALIDATION_AVAILABLE = True
+except ImportError:
+    log("warning", "Validation functions not available")
+    VALIDATION_AVAILABLE = False
 
 BASE = Path(__file__).parent.parent
 
@@ -361,3 +388,84 @@ def save_su2mesh(multiblock,su2_export_filename):
               s += str(pts.GetId(j)) + " "
             s += "\n"
             f.write(s)
+
+########################################################################################
+# Convert config file to JSON and validate with schema using predefined functions
+########################################################################################
+def convert_and_validate_config(cfg_file_path: str, schema_path: str = None, output_json_path: str = None):
+    """
+    Convert SU2 config file to JSON and validate it against a schema using predefined functions.
+    
+    Args:
+        cfg_file_path (str): Path to the SU2 configuration file (.cfg)
+        schema_path (str, optional): Path to the JSON schema file. Defaults to JsonSchema.json
+        output_json_path (str, optional): Path to save the converted JSON file
+    
+    Returns:
+        tuple: (is_valid, config_dict, errors)
+    """
+    
+    if not VALIDATION_AVAILABLE:
+        log("error", "Validation functions are not available")
+        return False, {}, ["Validation functions not imported"]
+    
+    try:
+        # Set default schema path if not provided
+        if not schema_path:
+            schema_path = str(BASE / "JsonSchema.json")
+        
+        log("info", f"Converting config file: {cfg_file_path}")
+        log("info", f"Using schema: {schema_path}")
+        
+        config_dict = cfg_to_json_dict(cfg_file_path)
+        log("info", f"Successfully parsed {len(config_dict)} configuration parameters")
+        
+        config_dict = apply_su2_fixes(config_dict)
+        log("info", "Applied SU2 compatibility fixes")
+        
+        if output_json_path:
+            try:
+                with open(output_json_path, "w", encoding="utf-8") as json_file:
+                    json.dump(config_dict, json_file, indent=2, ensure_ascii=False)
+                log("info", f"JSON file saved to: {output_json_path}")
+            except Exception as e:
+                log("error", f"Error saving JSON file: {e}")
+        
+        # Validate using predefined function
+        is_valid, validated_config, errors = validate_cfg_with_schema(cfg_file_path, schema_path)
+        
+        if is_valid:
+            log("info", "Configuration is valid against schema!")
+        else:
+            log("error", f"Configuration validation failed with {len(errors)} errors")
+            for i, error in enumerate(errors, 1):
+                if hasattr(error, 'message'):
+                    log("error", f"  {i}. {error.message}")
+                else:
+                    log("error", f"  {i}. {str(error)}")
+        
+        return is_valid, config_dict, errors
+        
+    except FileNotFoundError as e:
+        log("error", f"File not found: {e}")
+        return False, {}, [str(e)]
+    except Exception as e:
+        log("error", f"Unexpected error in convert_and_validate_config: {e}")
+        return False, {}, [str(e)]
+
+########################################################################################
+# Simple wrapper function for easy use
+########################################################################################
+def load_and_validate_config(cfg_file_path: str, schema_file: str = "JsonSchema.json"):
+    """
+    Simple wrapper to load a config file and validate it.
+    
+    Args:
+        cfg_file_path (str): Path to the SU2 configuration file
+        schema_file (str): Name of schema file (defaults to JsonSchema.json)
+    
+    Returns:
+        tuple: (is_valid, config_dict, errors)
+    """
+    schema_path = str(BASE / schema_file)
+    return convert_and_validate_config(cfg_file_path, schema_path)

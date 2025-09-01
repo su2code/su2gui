@@ -53,11 +53,29 @@ for handler in logger.handlers:
 class CustomHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
+        # Enrich with traceback or origin for better diagnostics
+        try:
+            enriched = log_entry
+            if record.exc_info:
+                import traceback
+                exc_text = "".join(traceback.format_exception(*record.exc_info))
+                enriched = f"{log_entry}\n{exc_text}"
+            else:
+                enriched = f"{log_entry}\n[{record.pathname}:{record.lineno} in {record.funcName}]"
+
+            # Targeted capture to find the '.startswith' on dict origin
+            if "'dict' object has no attribute 'startswith'" in record.getMessage():
+                import traceback
+                stack = "".join(traceback.format_stack(limit=12))
+                enriched = f"{enriched}\nStack (capture):\n{stack}"
+        except Exception:
+            enriched = log_entry
+
         if record.levelno == logging.ERROR:
-            handle_error(log_entry)
+            handle_error(enriched)
         if record.levelno == logging.WARN:
-            handle_warn(log_entry)
-        add_new_logs(log_entry)
+            handle_warn(enriched)
+        add_new_logs(enriched)
 
 
 # Add the custom handler to the root logger
@@ -263,3 +281,15 @@ def logs_tab():
                           style = "padding: 3rem; color: black; background-color: white",
                           hide_details = True
                         )
+
+# Special handling for binary restart file information
+def log_binary_restart_info(message, **kwargs):
+    """Special logging function for binary restart file information that's more user-friendly"""
+    
+    # Create a more informative message
+    info_message = f"INFO: {message}"
+    if "detail" in kwargs:
+        info_message += f" - {kwargs.get('detail')}"
+    
+    # Log as info rather than warning for binary restart file status
+    logger.info(info_message)

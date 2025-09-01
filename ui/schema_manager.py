@@ -63,17 +63,17 @@ def validate_configuration():
         is_valid = validate_config_standalone(schema_path, config_path)
         
         if is_valid:
-            state.schema_validation_status = "✅ Valid"
+            state.schema_validation_status = " Valid"
             state.validation_results = []
         else:
-            state.schema_validation_status = "❌ Invalid"
+            state.schema_validation_status = " Invalid"
             state.validation_results = []  # Simplified - errors logged elsewhere
         
         state.dirty("schema_validation_status", "validation_results")
         
     except Exception as e:
         log("error", f"Validation error: {e}")
-        state.schema_validation_status = "⚠️ Error"
+        state.schema_validation_status = "Error"
 
 @ctrl.trigger("add_schema_property")
 def add_schema_property():
@@ -393,7 +393,7 @@ def create_validation_results_view():
             with html.Div(v_for="(error, index) in validation_results", key="index"):
                 with vuetify.VCard(class_="mb-2"):
                     with vuetify.VCardText():
-                        html.Strong("Path: {{ error.path.join(' → ') || 'root' }}")
+                        html.Strong("Path: {{ error.path.join('  ') || 'root' }}")
                         html.Br()
                         html.Span("Message: {{ error.message }}")
                         html.Br()
