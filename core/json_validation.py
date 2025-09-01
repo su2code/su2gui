@@ -341,7 +341,7 @@ def run_enhanced_validation_tests():
         
         results = {}
         for test_name, config in test_configs.items():
-            print(f"\n📋 Testing: {test_name}")
+            print(f"\n Testing: {test_name}")
             print("-" * 50)
             
             # Perform custom validations
@@ -367,9 +367,9 @@ def run_enhanced_validation_tests():
             
             # Display results
             if is_valid:
-                print("✅ PASSED - Configuration is valid")
+                print(" PASSED - Configuration is valid")
             else:
-                print(f"❌ FAILED - Found {len(all_errors)} errors:")
+                print(f" FAILED - Found {len(all_errors)} errors:")
                 for i, error in enumerate(all_errors, 1):
                     error_type = error.get('type', 'unknown')
                     print(f"   {i}. [{error_type}] {error['message']}")
@@ -402,31 +402,31 @@ def run_enhanced_validation_tests():
         
         for test_name in expected_failures:
             if results[test_name]["valid"]:
-                print(f"❌ {test_name} should have FAILED but PASSED")
+                print(f" {test_name} should have FAILED but PASSED")
                 all_correct = False
             else:
-                print(f"✅ {test_name} correctly FAILED")
+                print(f" {test_name} correctly FAILED")
         
         for test_name in expected_passes:
             if not results[test_name]["valid"]:
-                print(f"❌ {test_name} should have PASSED but FAILED")
+                print(f" {test_name} should have PASSED but FAILED")
                 all_correct = False
             else:
-                print(f"✅ {test_name} correctly PASSED")
+                print(f" {test_name} correctly PASSED")
         
         if all_correct:
-            print("\n🎉 All validation rules are working correctly!")
+            print("\n All validation rules are working correctly!")
         else:
-            print("\n⚠️  Some validation rules may need adjustment")
+            print("\n Some validation rules may need adjustment")
         
         return results
         
     except ImportError as e:
-        print(f"❌ Cannot import enhanced validator: {str(e)}")
+        print(f" Cannot import enhanced validator: {str(e)}")
         print("Make sure enhanced_config_validator.py is available")
         return None
     except Exception as e:
-        print(f"❌ Test suite error: {str(e)}")
+        print(f" Test suite error: {str(e)}")
         import traceback
         traceback.print_exc()
         return None

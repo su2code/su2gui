@@ -34,7 +34,7 @@ except ImportError:
 
 # Import validation functions
 try:
-    from test_validation import cfg_to_json_dict, validate_cfg_with_schema, apply_su2_fixes, apply_schema_fixes
+    from core.json_validation import cfg_to_json_dict, validate_cfg_with_schema, apply_su2_fixes, apply_schema_fixes
     VALIDATION_AVAILABLE = True
 except ImportError:
     log("warning", "Validation functions not available")

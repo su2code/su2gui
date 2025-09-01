@@ -209,7 +209,7 @@ def validate_current_config():
     """Validate current configuration against JSON schema"""
     try:
         # Import validator locally to avoid circular imports
-        from test_validation import validate_config_standalone
+        from core.json_validation import validate_config_standalone
         
         # Use the standalone validator
         case_config_path = str(Path(__file__).parent.parent / "user" / state.case_name / "config_new.json")

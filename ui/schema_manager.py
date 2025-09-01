@@ -54,7 +54,7 @@ def load_schema_properties():
 def validate_configuration():
     """Validate current configuration against schema"""
     try:
-        from test_validation import validate_config_standalone
+        from core.json_validation import validate_config_standalone
         from pathlib import Path
         
         schema_path = str(Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json")

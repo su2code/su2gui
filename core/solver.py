@@ -28,7 +28,7 @@ from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
 from core.su2_json import *
 from core.su2_io import save_su2mesh, save_json_cfg_file
-from core.enhanced_config_validator import SU2ConfigValidator
+from core.config_validator import SU2ConfigValidator
 
 # check if a file is opened by another process
 #import psutil
