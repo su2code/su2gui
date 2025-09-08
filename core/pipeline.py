@@ -199,7 +199,7 @@ class PipelineManager:
         return _id
 
     def toggle_collapsed(self, _id, icons=["collapsed", "collapsible"]):
-        """ toggle if the node is shown as collapsed or not. Collapsed means we do not show its right children """
+        
         # what we want is to only toggle the collapse for the 'right' path and not the 'left' path.
         #print("toggle collapsed for id ",_id)
         node = self.get_node(_id)
@@ -223,7 +223,7 @@ class PipelineManager:
     # remove a node and update the children
     # input: string _id
     def remove_node(self,_id):
-        """ remove a node based on the key of the node, and move all children up """
+        
         #print("list=",self._nodes)
 
         # step 1: get the parent of the node
@@ -266,7 +266,7 @@ class PipelineManager:
     # remove a node and update the children
     # input: string _id
     def remove_node_and_children(self,_id):
-        """ Remove a node and all right children. We keep the left children. """
+       
         # step 1: get the root node
         if (self.get_node(_id) == None):
             #print("root node is none")
@@ -288,7 +288,7 @@ class PipelineManager:
     # note that we have to remove the "right" subnodes and not the "left" subnodes
     # The "right" subnodes are the subnodes where the first subnode has the lowest id
     def remove_right_subnode(self, _name):
-        """ Remove the node and all right children. """
+       
 
         # first, find the id of the node with name "_name"
         root_id = -1
@@ -330,7 +330,7 @@ class PipelineManager:
 
     # change the value of _key of the node with name "name"
     def update_node_value(self, _name,_key,_value):
-        """ For a node with 'name'=_name, apply _key = _value """
+        
         for k in self._nodes:
             #print("node=",k)
             if self._nodes[k]['name']==_name:
@@ -338,7 +338,7 @@ class PipelineManager:
               self._nodes[k][_key] = _value
 
     def get_parents(self, _parent):
-        """ For _parent, return a list of all nodes with the same parents """
+        
         parent_list=[]
         #print("find nodes with parent ",_parent)
         for k in self._nodes:
@@ -348,7 +348,7 @@ class PipelineManager:
         return parent_list
 
     def get_id(self,_name):
-        """ for _name, get the id (key) in the dictionary """
+        
         index = None
         for k in self._nodes:
           if self._nodes[k]['name']==_name:
@@ -356,7 +356,7 @@ class PipelineManager:
         return index
 
     def get_children(self, _name):
-        """ For _name, return a sorted list of all nodes that are children of name """
+       
         children_list=[]
         #print("find children of ",_name)
         index = self.get_id(_name)
@@ -368,7 +368,7 @@ class PipelineManager:
         return children_list
 
     def get_descendants(self, _id, descendants_list=[]):
-        """ For _id, return a sorted list of all nodes that are descendants of name """
+       
         #print("find descendants of ",_id)
         #index = self.get_id(_name)
         #print("descendants_list = ",descendants_list)

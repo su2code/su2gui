@@ -24,6 +24,7 @@ from ui.uicard import server
 from ui.mesh import root, mesh_actor, mesh_mapper
 from ui.vtk_helper import renderer
 from core.solver import proc_SU2, set_json_solver
+from core.su2_py_wrapper import save_json_cfg_py_file, generate_python_wrapper
 
 
 from pathlib import Path
@@ -295,6 +296,16 @@ def create_new_case():
 
         log("info", f"Case name set to {state.case_name}")
 
+        # Create a default Python wrapper (and config/json) for the new case
+        try:
+            json_name = getattr(state, 'filename_json_export', 'config.json')
+            cfg_name = getattr(state, 'filename_cfg_export', 'config.cfg')
+            py_name = getattr(state, 'filename_py_export', 'run_su2.py')
+            save_json_cfg_py_file(json_name, cfg_name, py_name)
+            log("info", f"Default Python wrapper '{py_name}' created for case '{state.case_name}'.")
+        except Exception as e:
+            log("warn", f"Could not create default Python wrapper for case '{state.case_name}': {e}")
+
         if state.delete_all_previous_cases == True:
             set_cases_list()
             for case in state.case_list:
@@ -407,6 +418,30 @@ def load_case(case_name):
             log("info", f"Restart file '{state.restart_filename}' loaded successfully.")
 
             break
+
+    # Ensure a default Python wrapper exists for this case
+    try:
+        py_name = getattr(state, 'filename_py_export', 'run_su2.py')
+        json_name = getattr(state, 'filename_json_export', 'config.json')
+        cfg_name_default = getattr(state, 'filename_cfg_export', 'config.cfg')
+
+        py_path = os.path.join(case_path, os.path.splitext(py_name)[0] + '.py')
+
+        if 'config_path' not in locals():
+            # No config found in the case; create default JSON/CFG/PY trio
+            save_json_cfg_py_file(json_name, cfg_name_default, py_name)
+            log("info", f"Default config and Python wrapper created for case '{state.case_name}'.")
+        elif not os.path.isfile(py_path):
+            # Config exists; just create wrapper that points to it
+            generate_python_wrapper(
+                json_data=getattr(state, 'jsonData', {}),
+                filename_py_export=py_name,
+                output_dir=case_path,
+                config_filename=os.path.basename(config_path),
+            )
+            log("info", f"Default Python wrapper '{py_name}' created for case '{state.case_name}'.")
+    except Exception as e:
+        log("warn", f"Could not ensure default Python wrapper for case '{state.case_name}': {e}")
 
     log("info", f"Case '{case_name}' loaded successfully.")
 

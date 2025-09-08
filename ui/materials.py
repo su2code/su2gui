@@ -22,20 +22,12 @@ state, ctrl = server.state, server.controller
 UNIVERSAL_GAS_CONSTANT = 8.314
 
 # for dialog cards:
-#1. define a boolean to show//hide the dialog
-#2. define dialog_card
-#3. define an update for the boolean to show/hide the dialog
-#4. initialize the dialog by calling it in the singlepagewithdrawerlayout
-#5. couple to a button in the main ui dialog
-
 # show the material dialog cards
 state.show_materials_dialog_card_fluid = False
 state.show_materials_dialog_card_viscosity = False
 state.show_materials_dialog_card_heatcapacity = False
 state.show_materials_dialog_card_conductivity = False
 
-#label_1 = markdown.Markdown(classes="pa-0 ma-0",content=("var_name", "**formula1 =** $a \\cdot x^2$"))
-#label_2 = markdown.Markdown(classes="pa-0 ma-0",content=("var_name", "**formula2 =** $b \\cdot x^2$"))
 #content1=("varname","**f=** $a \\cdot x^2$")
 # nijso TODO markdown text test #
 #mdstring = """
@@ -91,10 +83,7 @@ LMaterialsConductivityComp= [
   {"text": "Constant value", "value": 0, "json": "CONSTANT_CONDUCTIVITY"},
 ]
 
-# Initialize LMaterialsFluid based on the physics_comp_idx
-# This will be properly set when physics is initialized
-# LMaterialsFluid will be set based on the physics_comp_idx in the update_material function
-# Initially we'll use the incompressible values
+
 state.LMaterialsFluid = LMaterialsFluidIncomp.copy()
 
 # set the state variables using the json data from the config file
@@ -117,10 +106,21 @@ def set_json_materials():
 
   if 'INC_DENSITY_INIT' in state.jsonData:
     state.materials_inc_density_init_idx = state.jsonData['INC_DENSITY_INIT']
+  else:
+    state.jsonData['INC_DENSITY_INIT'] = 1.2
+    state.materials_inc_density_init_idx = 1.2
+  
   if 'INC_TEMPERATURE_INIT' in state.jsonData:
     state.materials_inc_temperature_init_idx = state.jsonData['INC_TEMPERATURE_INIT']
+  else:
+    state.jsonData['INC_TEMPERATURE_INIT'] = 293.15
+    state.materials_inc_temperature_init_idx = 293.15
+  
   if 'MOLECULAR_WEIGHT' in state.jsonData:
     state.materials_molecular_weight_idx = state.jsonData['MOLECULAR_WEIGHT']
+  else:
+    state.jsonData['MOLECULAR_WEIGHT'] = 28.9647
+    state.materials_molecular_weight_idx = 28.9647
 
   # # set fluid viscosity
   if 'MU_CONSTANT' in state.jsonData:
@@ -797,14 +797,30 @@ def update_material(materials_conductivity_idx, **kwargs):
 def computePressure():
   #update thermodynamic pressure for displaying in the dialog
   try:
+    # Ensure all required keys exist and have valid values
+    if 'INC_DENSITY_INIT' not in state.jsonData:
+      state.jsonData['INC_DENSITY_INIT'] = 1.2
+    if 'INC_TEMPERATURE_INIT' not in state.jsonData:
+      state.jsonData['INC_TEMPERATURE_INIT'] = 293.15
+    if 'MOLECULAR_WEIGHT' not in state.jsonData:
+      state.jsonData['MOLECULAR_WEIGHT'] = 28.9647
+    
     rho = float(state.jsonData['INC_DENSITY_INIT'])
     T = float(state.jsonData['INC_TEMPERATURE_INIT'])
     M = float(state.jsonData['MOLECULAR_WEIGHT'])
+    
+    # Check for valid values
+    if rho <= 0 or T <= 0 or M <= 0:
+      log("warn", "Invalid values for density, temperature, or molecular weight in computePressure")
+      return
+    
     R = float(UNIVERSAL_GAS_CONSTANT / (M/1000.0))
-
-    state.jsonData['THERMODYNAMIC_PRESSURE']= round(rho*R*T,2)
+    state.jsonData['THERMODYNAMIC_PRESSURE'] = round(rho*R*T, 2)
+    
+  except (ValueError, TypeError) as e:
+    log("warn", f'Unable to set THERMODYNAMIC_PRESSURE due to invalid numeric value: {e}')
   except Exception as e:
-    log("warn",f'Unable to set THERMODYNAMIC_PRESSURE due to incorrect value for {e} in Materials Tab')
+    log("warn", f'Unable to set THERMODYNAMIC_PRESSURE due to unexpected error: {e}')
 
 ###############################################################
 # Materials - fluid model options

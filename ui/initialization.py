@@ -1,26 +1,17 @@
-# initialization gittree menu
-
-# note that in the main menu, we need to call/add the following:
-# 1) from ui.initialization import *
-# 2) call initialization_card() in SinglePageWithDrawerLayout
-# 3) define a node in the gittree (pipeline)
-# 4) define any global state variables that might be needed
-
 import sys
 import os
 from pathlib import Path
 
-# Add parent directory to path to allow importing from sibling directories
+
 parent_dir = str(Path(__file__).parent.parent.absolute())
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
 
-# definition of ui_card
 from ui.uicard import ui_card, ui_subcard, server
 from trame.widgets import vuetify
 from core.su2_json import *
 
-# import the grid from the mesh module
+
 from ui.mesh import *
 from ui.vtk_helper import *
 
@@ -47,23 +38,6 @@ state.init_dissipation = 1.0
 # Initialization models - list options #
 ############################################################################
 
-# option: use restart file or initialize
-# when a restart file is loaded, we automatically use it unless we overwrite it in the
-# initial setup
-# the solver cannot start unless we define an initial solution somehow
-
-
-# option: initialization pull-down: {from file, uniform}
-# option: patch: {cube, cylinder, sphere}
-#         selection of variables{U,V,etc} + constant value
-
-
-############################################################################
-# Initialization models - list options #
-############################################################################
-
-# List: initialization model: options
-# patch is enabled when uniform or restart has been used
 state.LInitializationOption= [
   {"text": "Uniform", "value": 0},
   {"text": "From file (Restart)", "value": 1},
@@ -86,14 +60,14 @@ PatchZoneDict = [
   {'zone':1, 'density':1.2, 'momentum':[1,1,1], 'energy': 1, 'nu_tidle':1.2, 'dissipation':100, 'temperature':300, 'velocity':[1,1,1], 'tke':1.2, 'pressure': 1},
 ]
 
-# set the state variables using the json configuration file data
+
 def set_json_initialization():
   state.initial_option_idx = 0
   if 'RESTART_SOL' in state.jsonData and state.jsonData['RESTART_SOL']==True:
     log("info", "restarting solution from file")
     state.initial_option_idx = 1
   else:
-    # note that we always restart from file, but in this case we create the file from uniform conditions
+    
     log("info", "restarting from uniform initial conditions")
     state.initial_option_idx = 0
   state.dirty('initial_option_idx')
@@ -126,18 +100,17 @@ def initialization_card():
       log("info", "def initialization_card ")
       with vuetify.VContainer(fluid=True):
 
-         # 1 row of option lists
+         
         with vuetify.VRow(classes="pt-2"):
           with vuetify.VCol(cols="10"):
 
-            # Then a list selection for initialization submodels
+           
             vuetify.VSelect(
-                # What to do when something is selected
+               
                 v_model=("initial_option_idx", 0),
-                # The items in the list
-                #items=("representations_initial",state.LInitializationOption),
+               
                 items=("Object.values(LInitializationOption)",),
-                # the name of the list box
+                
                 label="Initialize from:",
                 hide_details=True,
                 dense=True,
@@ -145,18 +118,13 @@ def initialization_card():
                 classes="pt-1 mt-1",
             )
 
-
-    # update the initial option to recompute based on upstream changes
-    # this makes sure that the incompressible vs compressible subui
-    # is changed when comp/incomp is changed in the physics solver
-
-###############################################################
+#############################################################
 # Initialize - method
 ###############################################################
 @state.change("initialization_state_idx")
 def update_initial_option(initialization_state_idx, **kwargs):
     log("info", f"initialization state selection:  = {state.initialization_state_idx}")
-    # but for compressible or incompressible?
+    
 
 
 @state.change("initial_option_idx")
@@ -164,9 +132,7 @@ def update_initial_option(initial_option_idx, **kwargs):
     log("info", f"initialization selection:  = {state.initial_option_idx}")
     log("info", f"restart_sol= {bool (state.initial_option_idx)}")
 
-    # option=0 : uniform values
-    # option=1 : restart from file
-    # option=2 : patch
+    
     if (state.initial_option_idx==0):
       # uniform (constant) initialization
       log("info", f"state.jsonData solve =  = {state.jsonData['SOLVER']}")
@@ -199,7 +165,7 @@ def initialize_uniform():
 
   log("info", "initialize solution")
 
-  # construct the dataset_arrays
+ 
   datasetArrays = []
   counter=0
 
@@ -210,7 +176,7 @@ def initialize_uniform():
   else:
     compressible = True
 
-  # if incompressible, we check if temperature is on
+  
   energy = False
   if (compressible == False):
     if ('INC_ENERGY_EQUATION' in state.jsonData and state.jsonData['INC_ENERGY_EQUATION']==True):
@@ -270,9 +236,9 @@ def initialize_uniform():
 
     ArrayObject = vtk.vtkFloatArray()
     ArrayObject.SetName(name)
-    # all components are scalars, no vectors for velocity
+    
     ArrayObject.SetNumberOfComponents(1)
-    # how many elements do we have?
+    
     ArrayObject.SetNumberOfValues(nPoints)
     ArrayObject.SetNumberOfTuples(nPoints)
 

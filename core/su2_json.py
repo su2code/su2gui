@@ -12,8 +12,7 @@ if parent_dir not in sys.path:
 from ui.uicard import ui_card, ui_subcard, server
 from core.logger import log
 
-import json,jsonschema
-from jsonschema import validate, ValidationError, SchemaError
+import json
 
 BASE = Path(__file__).parent.parent
 
@@ -31,7 +30,6 @@ state, ctrl = server.state, server.controller
 #        self._children_map = defaultdict(set)
 
 # ##################################### JSON ##############################
-# Opening JSON file, which is a python dictionary
 def read_json_data(filenam):
   log("info", "jsondata::opening json file and reading data")
   with open(filenam,"r") as jsonFile:
@@ -113,15 +111,21 @@ def updateBCDictListfromJSON():
   if "MARKER_OUTLET" in state.jsonData:
     if isinstance(state.jsonData['MARKER_OUTLET'], str):
       state.jsonData['MARKER_OUTLET'] = [state.jsonData['MARKER_OUTLET']]
-    marker_corrector(state.jsonData['MARKER_OUTLET'], 2)
+    # Ensure pairs of (name, value)
+    corrected = marker_corrector(state.jsonData['MARKER_OUTLET'], 2)
+    state.jsonData['MARKER_OUTLET'] = corrected
+    # Prepare outlet type list per outlet
+    outlet_types = state.jsonData.get('INC_OUTLET_TYPE', [])
+    if isinstance(outlet_types, str):
+      outlet_types = [outlet_types]
     for i in range(len(state.jsonData['MARKER_OUTLET']) // 2):
       bc_name, value = state.jsonData['MARKER_OUTLET'][2*i:2*(i+1)]
       bcdict = findBCDictByName(bc_name)
       if bcdict != None:
         bcdict['bcType'] = "Outlet"
-        if 'INC_OUTLET_TYPE' in state.jsonData:
-            type = state.jsonData['INC_OUTLET_TYPE'][0] if isinstance(state.jsonData['INC_OUTLET_TYPE'], list) else state.jsonData['INC_OUTLET_TYPE'] 
-            if type == 'MASS_FLOW_OUTLET':
+        if outlet_types:
+            sel_type = outlet_types[i] if i < len(outlet_types) else outlet_types[0]
+            if sel_type == 'MASS_FLOW_OUTLET':
                 bcdict['bc_subtype'] = 'Target mass flow rate'
                 bcdict['bc_massflow'] = value
             else:
@@ -135,7 +139,16 @@ def updateBCDictListfromJSON():
   if "MARKER_INLET" in state.jsonData:
     if isinstance(state.jsonData['MARKER_INLET'], str):
       state.jsonData['MARKER_INLET'] = [state.jsonData['MARKER_INLET']]
-    marker_corrector(state.jsonData['MARKER_INLET'], 6)
+    corrected = marker_corrector(state.jsonData['MARKER_INLET'], 6)
+    state.jsonData['MARKER_INLET'] = corrected
+    # Normalize types
+    inc_inlet_types = state.jsonData.get('INC_INLET_TYPE', [])
+    if isinstance(inc_inlet_types, str):
+      inc_inlet_types = [inc_inlet_types]
+    inlet_types = state.jsonData.get('INLET_TYPE', [])
+    if isinstance(inlet_types, str):
+      inlet_types = [inlet_types]
+
     for i in range(len(state.jsonData['MARKER_INLET']) // 6):
       bc_name, val1, val2, v1, v2, v3 = state.jsonData['MARKER_INLET'][6*i:6*(i+1)]
       bcdict = findBCDictByName(bc_name) 
@@ -144,19 +157,19 @@ def updateBCDictListfromJSON():
         bcdict['bc_velocity_normal'] = [v1, v2, v3]
 
         # Checking the type of inlet marker
-        if 'INC_INLET_TYPE' in state.jsonData:
+        if inc_inlet_types:
             bcdict['bc_temperature'] = val1
-            type = state.jsonData['INC_INLET_TYPE'][0] if isinstance(state.jsonData['INC_INLET_TYPE'], list) else state.jsonData['INC_INLET_TYPE'] 
-            if type == 'PRESSURE_INLET':
+            sel_type = inc_inlet_types[i] if i < len(inc_inlet_types) else inc_inlet_types[0]
+            if sel_type == 'PRESSURE_INLET':
                 bcdict['bc_subtype'] = 'Pressure inlet'
                 bcdict['bc_pressure'] = val2
             else:
                 bcdict['bc_subtype'] = 'Velocity inlet'
                 bcdict['bc_velocity_magnitude'] = val2
 
-        elif 'INLET_TYPE' in state.jsonData:
-            type = state.jsonData['INLET_TYPE'][0] if isinstance(state.jsonData['INLET_TYPE'], list) else state.jsonData['INLET_TYPE'] 
-            if type == 'TOTAL_CONDITIONS':
+        elif inlet_types:
+            sel_type = inlet_types[i] if i < len(inlet_types) else inlet_types[0]
+            if sel_type == 'TOTAL_CONDITIONS':
                 bcdict['bc_subtype'] = 'Total Conditions'
                 bcdict['bc_temperature'] = val1
                 bcdict['bc_pressure'] = val2
@@ -186,11 +199,13 @@ def updateBCDictListfromJSON():
         bcdict["bc_subtype"] = 'Far-field'
 
   # updating iso-thermal boundaries
-  if "MARKER_ISOTHERMAL" in state.jsonData:
-    if isinstance(state.jsonData['MARKER_ISOTHERMAL'], str):
-      state.jsonData['MARKER_ISOTHERMAL'] = [state.jsonData['MARKER_ISOTHERMAL']]
-    marker_corrector(state.jsonData['MARKER_ISOTHERMAL'], 2)
-    for i in range(len(state.jsonData['MARKER_ISOTHERMAL']) // 2):
+  # Always normalize to a list (empty if missing) and correct shape
+  iso = state.jsonData.get('MARKER_ISOTHERMAL', [])
+  if isinstance(iso, str):
+    iso = [iso]
+  corrected = marker_corrector(iso, 2)
+  state.jsonData['MARKER_ISOTHERMAL'] = corrected
+  for i in range(len(state.jsonData['MARKER_ISOTHERMAL']) // 2):
       bc_name, value = state.jsonData['MARKER_ISOTHERMAL'][2*i:2*(i+ 1)]
       bcdict = findBCDictByName(bc_name) 
       if bcdict != None:
@@ -199,11 +214,12 @@ def updateBCDictListfromJSON():
         bcdict['bc_temperature'] = value
 
   # updating Heat flux boundaries
-  if "MARKER_HEATFLUX" in state.jsonData:
-    if isinstance(state.jsonData['MARKER_HEATFLUX'], str):
-      state.jsonData['MARKER_HEATFLUX'] = [state.jsonData['MARKER_HEATFLUX']]
-    marker_corrector(state.jsonData['MARKER_HEATFLUX'], 2)
-    for i in range(len(state.jsonData['MARKER_HEATFLUX']) // 2):
+  heatflux = state.jsonData.get('MARKER_HEATFLUX', [])
+  if isinstance(heatflux, str):
+    heatflux = [heatflux]
+  corrected = marker_corrector(heatflux, 2)
+  state.jsonData['MARKER_HEATFLUX'] = corrected
+  for i in range(len(state.jsonData['MARKER_HEATFLUX']) // 2):
       bc_name, value = state.jsonData['MARKER_HEATFLUX'][2*i:2*(i+ 1)]
       bcdict = findBCDictByName(bc_name) 
       if bcdict != None:
@@ -213,11 +229,12 @@ def updateBCDictListfromJSON():
 
 
   # updating Heat transfer boundaries
-  if "MARKER_HEATTRANSFER" in state.jsonData:
-    if isinstance(state.jsonData['MARKER_HEATTRANSFER'], str):
-      state.jsonData['MARKER_HEATTRANSFER'] = [state.jsonData['MARKER_HEATTRANSFER']]
-    marker_corrector(state.jsonData['MARKER_HEATTRANSFER'], 3)
-    for i in range(len(state.jsonData['MARKER_HEATTRANSFER']) // 3):
+  heattransfer = state.jsonData.get('MARKER_HEATTRANSFER', [])
+  if isinstance(heattransfer, str):
+    heattransfer = [heattransfer]
+  corrected = marker_corrector(heattransfer, 3)
+  state.jsonData['MARKER_HEATTRANSFER'] = corrected
+  for i in range(len(state.jsonData['MARKER_HEATTRANSFER']) // 3):
       bc_name, val1, val2 = state.jsonData['MARKER_HEATTRANSFER'][3*i:3*(i + 1)]
       bcdict = findBCDictByName(bc_name) 
       if bcdict != None:

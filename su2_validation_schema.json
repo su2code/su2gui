@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://su2code.github.io/schemas/su2-validation.schema.json",
+  "title": "SU2 Cross-Parameter Validation Schema",
+  "description": "Permissive schema capturing key cross-parameter rules from CConfig.cpp. Unknown keys are allowed.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "SOLVER": {
+      "type": "string",
+      "enum": [
+        "EULER", "INC_EULER",
+        "NAVIER_STOKES", "INC_NAVIER_STOKES",
+        "RANS", "INC_RANS",
+        "FEM_EULER", "FEM_NAVIER_STOKES"
+      ]
+    },
+    "VISCOSITY_MODEL": {
+      "type": "string",
+      "enum": ["CONSTANT", "CONSTANT_VISCOSITY", "SUTHERLAND", "POLYNOMIAL", "FLAMELET"]
+    },
+    "CONDUCTIVITY_MODEL": {
+      "type": "string",
+      "enum": ["CONSTANT", "CONSTANT_CONDUCTIVITY", "CONSTANT_PRANDTL", "POLYNOMIAL", "FLAMELET"]
+    },
+    "TURBULENT_CONDUCTIVITY_MODEL": {
+      "type": "string",
+      "enum": ["CONSTANT_PRANDTL", "CONSTANT_PRANDTL_TURB", "NONE"]
+    },
+    "KIND_TURB_MODEL": {
+      "type": "string",
+      "enum": ["NONE", "NO_TURB_MODEL", "SA", "SST", "KW", "IMPLICIT_LES", "SMAGORINSKY", "WALE", "VREMAN"]
+    },
+    "KIND_TRANS_MODEL": {
+      "type": "string",
+      "enum": ["NONE", "NO_TRANS_MODEL", "LM"]
+    },
+    "INC_DENSITY_MODEL": {
+      "type": "string",
+      "enum": ["CONSTANT", "VARIABLE", "BOUSSINESQ", "CONSTANT_DENSITY"]
+    },
+    "INC_ENERGY_EQUATION": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string", "enum": ["YES", "NO", "TRUE", "FALSE", "ON", "OFF"] }
+      ]
+    },
+    "ENERGY_EQUATION": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string", "enum": ["YES", "NO", "TRUE", "FALSE", "ON", "OFF"] }
+      ]
+    },
+    "AXISYMMETRIC": {
+      "oneOf": [
+        { "type": "boolean" },
+        { "type": "string", "enum": ["YES", "NO", "TRUE", "FALSE"] }
+      ]
+    },
+    "MARKER_HEATFLUX": { "type": "array" },
+    "MARKER_ISOTHERMAL": { "type": "array" },
+    "MARKER_EULER": { "type": "array" },
+    "MARKER_INLET": { "type": "array" },
+    "INC_INLET_TYPE": { "type": "array", "items": { "type": "string" } },
+    "OUTPUT_FILES": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "RESTART", "RESTART_ASCII",
+          "PARAVIEW", "PARAVIEW_BINARY", "PARAVIEW_MULTIBLOCK",
+          "TECPLOT", "TECPLOT_BINARY",
+          "SURFACE_PARAVIEW", "SURFACE_PARAVIEW_BINARY",
+          "SURFACE_TECPLOT", "SURFACE_TECPLOT_BINARY",
+          "STL", "STL_BINARY", "CSV"
+        ]
+      }
+    },
+    "MOTION_ORIGIN": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 3
+    },
+    "BODY_FORCE_VECTOR": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "SA_OPTIONS": { "oneOf": [ { "type": "string" }, { "type": "array" } ] },
+    "SST_OPTIONS": { "oneOf": [ { "type": "string" }, { "type": "array" } ] },
+    "LM_OPTIONS": { "oneOf": [ { "type": "string" }, { "type": "array" } ] }
+  },
+
+  "allOf": [
+    {
+      "title": "INC_EULER requires constant density and no energy equation",
+      "if": {
+        "properties": { "SOLVER": { "const": "INC_EULER" } },
+        "required": ["SOLVER"]
+      },
+      "then": {
+        "allOf": [
+          { "properties": { "INC_DENSITY_MODEL": { "const": "CONSTANT" } }, "required": ["INC_DENSITY_MODEL"] },
+          {
+            "anyOf": [
+              { "properties": { "INC_ENERGY_EQUATION": { "type": "boolean", "const": false } }, "required": ["INC_ENERGY_EQUATION"] },
+              { "properties": { "INC_ENERGY_EQUATION": { "type": "string", "enum": ["NO", "FALSE", "OFF"] } }, "required": ["INC_ENERGY_EQUATION"] }
+            ]
+          }
+        ]
+      }
+    },
+
+    {
+      "title": "RANS solvers require a turbulence model",
+      "if": {
+        "properties": { "SOLVER": { "enum": ["RANS", "INC_RANS"] } },
+        "required": ["SOLVER"]
+      },
+      "then": {
+        "properties": { "KIND_TURB_MODEL": { "not": { "enum": ["NONE", "NO_TURB_MODEL", ""] } } },
+        "required": ["KIND_TURB_MODEL"]
+      }
+    },
+
+    {
+      "title": "Transition model requires active turbulence model",
+      "if": {
+        "properties": { "KIND_TRANS_MODEL": { "enum": ["LM"] } },
+        "required": ["KIND_TRANS_MODEL"]
+      },
+      "then": {
+        "properties": { "KIND_TURB_MODEL": { "not": { "enum": ["NONE", "NO_TURB_MODEL"] } } },
+        "required": ["KIND_TURB_MODEL"]
+      }
+    },
+
+    {
+      "title": "Euler solvers incompatible with heat/temperature markers",
+      "if": {
+        "properties": { "SOLVER": { "enum": ["EULER", "INC_EULER", "FEM_EULER"] } },
+        "required": ["SOLVER"]
+      },
+      "then": {
+        "properties": {
+          "MARKER_HEATFLUX": { "maxItems": 0 },
+          "MARKER_ISOTHERMAL": { "maxItems": 0 }
+        }
+      }
+    },
+
+    {
+      "title": "LM transition model not compatible with axisymmetric flows",
+      "if": {
+        "properties": {
+          "AXISYMMETRIC": { "oneOf": [ { "type": "boolean", "const": true }, { "type": "string", "enum": ["YES", "TRUE"] } ] }
+        },
+        "required": ["AXISYMMETRIC"]
+      },
+      "then": { "properties": { "KIND_TRANS_MODEL": { "not": { "const": "LM" } } } }
+    },
+
+    {
+      "title": "Incompressible inlet type presence when inlets exist",
+      "if": {
+        "allOf": [
+          { "properties": { "SOLVER": { "enum": ["INC_EULER", "INC_NAVIER_STOKES", "INC_RANS"] } }, "required": ["SOLVER"] },
+          { "properties": { "MARKER_INLET": { "type": "array", "minItems": 1 } }, "required": ["MARKER_INLET"] }
+        ]
+      },
+      "then": { "required": ["INC_INLET_TYPE"] }
+    }
+  ]
+}

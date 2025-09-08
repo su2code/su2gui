@@ -5,6 +5,7 @@ The SU2 Graphical User Interface.
 import os
 import argparse
 from base64 import b64encode
+import json
 
 from trame.app import get_server
 from trame.app.file_upload import ClientFile
@@ -12,13 +13,12 @@ from trame.widgets import markdown
 
 from trame.ui.vuetify import SinglePageWithDrawerLayout
 #from trame.ui.vuetify import SinglePageLayout
-from trame.widgets import vuetify, vtk as vtk_widgets
+from trame.widgets import vuetify, vtk as vtk_widgets, html
 from trame.widgets import trame
 
 #import itertools
 from datetime import date
 
-# Import json setup for writing the config file in json and cfg file format.
 from core.su2_json import *
 # Export su2 mesh file.
 from core.su2_io import save_su2mesh, save_json_cfg_file
@@ -35,9 +35,25 @@ from core.logger import log, clear_logs, Error_dialog_card, Warn_dialog_card, lo
 
 # Config tab
 from ui.config import *
+# Schema manager - import all to ensure controller functions are registered
+from ui.schema_manager import *
+
 # User configuration
 from core.user_config import get_su2_path, set_su2_path, clear_config
 import platform
+
+import threading
+import asyncio
+from typing import Optional
+
+from installer import install as installer_install
+from installer.constants import InstallMode, SU2_RELEASE
+from installer.detect import (
+    detect_installation_capabilities,
+    get_default_prefix,
+    get_system_info
+)
+from installer.ui import SU2InstallerApp
 
 import vtk
 # vtm reader
@@ -83,8 +99,7 @@ import vtkmodules.vtkRenderingOpenGL2  # noqa
 
 #############################################################################
 # Gittree menu                                                              #
-# We have defined each of the tabs in its own module and we import it here. #
-# We then call the card in the SinglePageWithDrawerLayout() function.       #
+
 #############################################################################
 # gittree menu : import mesh tab                                            #
 from ui.mesh import *
@@ -102,8 +117,30 @@ from core.solver import *
 from ui.initialization import *
 # gittree menu : import file I/O tab                                        #
 from ui.fileio import *
+# gittree menu : import variables tab                                        #
+from ui.variables import *
 #############################################################################
 
+
+# -----------------------------------------------------------------------------
+from ui.schema_manager import (
+    load_schema_properties, 
+    validate_configuration,
+    add_schema_property,
+    remove_schema_property,
+    save_schema,
+    export_schema,
+    open_schema_dialog
+)
+
+# Make sure they're properly registered with the controller
+ctrl.load_schema_properties = load_schema_properties
+ctrl.validate_configuration = validate_configuration
+ctrl.add_schema_property = add_schema_property
+ctrl.remove_schema_property = remove_schema_property
+ctrl.save_schema = save_schema
+ctrl.export_schema = export_schema
+ctrl.open_schema_dialog = open_schema_dialog
 
 # -----------------------------------------------------------------------------
 # Trame setup
@@ -115,7 +152,68 @@ from core.pipeline import PipelineManager
 from pathlib import Path
 BASE = Path(__file__).parent
 
+state.show_schema_dialog = False
+state.schema_properties = {}
+state.schema_properties_list = []
+state.selected_property = None
+state.new_property_name = ""
+state.new_property_type = "string"
+state.new_property_description = ""
+state.new_property_default = ""
+state.new_property_enum = ""
+state.property_types = ["string", "number", "integer", "boolean", "array", "object"]
+state.validation_results = []
+state.schema_validation_status = "Not validated"
+
+# Check if JsonSchema.json exists, create a basic one if not
+schema_path = BASE / "JsonSchema.json"
+if not schema_path.exists():
+    log("warn", f"JsonSchema.json not found, creating a minimal schema at {schema_path}")
+    try:
+        with open(schema_path, "w") as f:
+            json.dump({
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "properties": {
+                    "SOLVER": {
+                        "type": "string",
+                        "description": "Type of solver",
+                        "enum": ["EULER", "NAVIER_STOKES", "RANS"]
+                    },
+                    "MATH_PROBLEM": {
+                        "type": "string",
+                        "description": "Type of mathematical problem",
+                        "enum": ["DIRECT", "ADJOINT", "LINEARIZED"]
+                    }
+                }
+            }, f, indent=2)
+        log("info", "Created minimal JsonSchema.json")
+    except Exception as e:
+        log("error", f"Failed to create JsonSchema.json: {e}")
+
 from trame.assets.local import LocalFileManager
+
+# Add installer state variables
+state.installer_dialog_visible = False
+state.installer_mode = "binaries"
+state.installer_prefix = str(get_default_prefix())
+state.installer_pywrapper = False
+state.installer_mpi = False
+state.installer_autodiff = False
+state.installer_jobs = 4
+state.installer_progress = 0
+state.installer_status = "Ready"
+state.installer_log = ""
+state.installer_running = False
+state.installer_show_progress = False
+
+# Check system capabilities
+try:
+    capabilities = detect_installation_capabilities()
+    state.installer_capabilities = capabilities
+except:
+    state.installer_capabilities = {"binaries": False, "source": True, "conda": False}
+
 
 clear_logs()
 log("info" , f"""
@@ -130,26 +228,27 @@ state.filename_json_export = "config_new.json"
 
 # for server side, we need to use a file manager
 local_file_manager = LocalFileManager(__file__)
-local_file_manager.url("collapsed", BASE / "icons/chevron-up.svg")
-local_file_manager.url("collapsible", BASE / "icons/chevron-down.svg")
-local_file_manager.url("su2logo", BASE / "img/logoSU2small.png")
-local_file_manager.url("favicon", BASE / "img/favicon.ico")
+# Register assets and keep their URL strings
+collapsed_icon_url = local_file_manager.url("collapsed", BASE / "icons/chevron-up.svg")
+collapsible_icon_url = local_file_manager.url("collapsible", BASE / "icons/chevron-down.svg")
+su2logo_url = local_file_manager.url("su2logo", BASE / "img/logoSU2small.png")
+favicon_url = local_file_manager.url("favicon", BASE / "img/favicon.ico")
 
-log("info", f"""
-****************************************
-local_file_manager = {local_file_manager}  
-local_file_manager = {type(local_file_manager)}  
-local_file_manager = {type(local_file_manager.assets)}  
-local_file_manager = {dir(local_file_manager.assets.items())}  
-local_file_manager = {local_file_manager.assets.keys()}  
-****************************************
-"""
-    
-    )
+log("info", f"Assets registered (favicon={favicon_url}, logo={su2logo_url})")
 
 
 # matplotlib history
 state.show_dialog = False
+
+# Validation panel defaults (avoid undefined refs on first render)
+if not hasattr(state, 'apply_auto_fixes'):
+    state.apply_auto_fixes = True
+if not hasattr(state, 'validation_issues'):
+    state.validation_issues = []
+if not hasattr(state, 'validation_fixes'):
+    state.validation_fixes = []
+if not hasattr(state, 'validation_summary'):
+    state.validation_summary = ""
 
 # TODO FIXME update from user input / cfg file
 state.history_filename = 'history.csv'
@@ -181,8 +280,6 @@ state.selectedBoundaryName="none"
 state.selectedBoundaryIndex = 0
 
 # Boundary Condition Dictionary List
-# This is the internal list of dictionaries for the boundary conditions
-# This will be converted and written as MARKER info to .json and .cfg files.
 state.BCDictList = [{"bcName": "main_wall",
                      "bcType":"Wall",
                      "bc_subtype":"Temperature",
@@ -345,6 +442,9 @@ id_fileio     = pipeline.add_node(parent=id_initial,    name="File I/O",
 # 9
 id_solver     = pipeline.add_node(parent=id_fileio,    name="Solver",
                                   subui="none", visible=1, color="#00ACC1", actions=["collapsible"])
+# 10
+# id_variables  = pipeline.add_node(parent=id_solver,    name="Variables",
+#                                  subui="none", visible=1, color="#00ACC1", actions=["collapsible"])
 
 # first node is active initially
 state.selection=["1"]
@@ -689,6 +789,19 @@ def update_active_sub_ui(active_sub_ui, **kwargs):
 
       ctrl.view_update()
 
+@state.change("schema_properties")
+def update_properties_list(schema_properties, **kwargs):
+    """Update properties list when schema changes"""
+    props_list = []
+    for name, prop_def in schema_properties.items():
+        props_list.append({
+            "name": name,
+            "type": prop_def.get("type", "unknown"),
+            "description": prop_def.get("description", ""),
+            "default": str(prop_def.get("default", ""))
+        })
+    state.schema_properties_list = props_list
+
 
 # some default options
 
@@ -1008,7 +1121,6 @@ def load_file_su2(su2_file_upload, **kwargs):
                                  )
 
 
-    # We have loaded a mesh, so enable the exporting of files
     state.export_disabled = False
 
     # we have deleted all actors, so add the non-boundary actors again
@@ -1054,25 +1166,32 @@ def load_cfg_file(cfg_file_upload, **kwargs):
     # reading each line of configuration file
     f = filecontent.splitlines()
     cfglist = []
-    f = [element for element in f if not (element.strip().startswith("%")) and len(element.strip())]
+    f = [element for element in f
+         if isinstance(element, str) and element.strip() and not element.strip().startswith('%')]
+
     for item in f:
-       item = item.strip()
-       if(item[0] == "%" or len(item)<1):
-          continue   
-       if(len(cfglist) and cfglist[-1][-1]=='\\'):
-          cfglist[-1] = cfglist[-1][:-1]
-          cfglist[-1] += item
-       else:
-          cfglist.append(item)
+        item = item.strip()
+        # Guard empty lines after stripping
+        if len(item) < 1:
+            continue
+        if item[0] == "%":
+            continue
+        if len(cfglist) and cfglist[-1] and cfglist[-1][-1] == '\\':
+            cfglist[-1] = cfglist[-1][:-1]
+            cfglist[-1] += item
+        else:
+            cfglist.append(item)
     
     cfg_dict = {}
     for item in cfglist:
+        if '=' not in item:
+            continue
         key, value = item.split('=', 1)
         key = key.strip()
         value = value.strip()
         
-        # Convert value to appropriate type
-        if (value.startswith('(') and value.endswith(')')) or ',' in value or ' ' in value:
+        # Convert value to appropriate type (only if it's a string)
+        if isinstance(value, str) and value and ((value.startswith('(') and value.endswith(')')) or ',' in value or ' ' in value):
             # Remove parentheses and split by comma
             if value[0]=='(' or value[-1]==')':
                value = value[1:-1]
@@ -1083,13 +1202,13 @@ def load_cfg_file(cfg_file_upload, **kwargs):
             # Convert each item to an appropriate type
             value = [v.strip() for v in value]
             value = [int(v) if v.isdigit() else v for v in value]
-        elif value.isdigit():
+        elif isinstance(value, str) and value.isdigit():
             value = int(value)
-        elif value.upper() == 'YES' or value.upper() == 'TRUE':
+        elif isinstance(value, str) and (value.upper() == 'YES' or value.upper() == 'TRUE'):
             value = True
-        elif value.upper() == 'NO' or value.upper() == 'FALSE':
+        elif isinstance(value, str) and (value.upper() == 'NO' or value.upper() == 'FALSE'):
             value = False   
-        elif value.upper() == 'NONE':
+        elif isinstance(value, str) and value.upper() == 'NONE':
             value = None
         else:
             try:
@@ -1133,6 +1252,255 @@ def load_cfg_file(cfg_file_upload, **kwargs):
     update_config_str()
 
 
+# Installer functions
+@ctrl.add("open_installer_dialog")
+def open_installer_dialog():
+    """Open the installer dialog"""
+    state.installer_dialog_visible = True
+    state.installer_show_progress = False
+    state.installer_progress = 0
+    state.installer_status = "Ready to install"
+    state.installer_log = ""
+    
+    # Update system capabilities
+    try:
+        capabilities = detect_installation_capabilities()
+        state.installer_capabilities = capabilities
+    except:
+        state.installer_capabilities = {"binaries": False, "source": True, "conda": False}
+
+@ctrl.add("close_installer_dialog")
+def close_installer_dialog():
+    """Close the installer dialog"""
+    if not state.installer_running:
+        state.installer_dialog_visible = False
+
+@ctrl.add("start_installation")
+def start_installation():
+    """Start the SU2 installation process"""
+    log("info", f"Starting installation with mode: {state.installer_mode}")
+    log("info", f"Installation prefix: {state.installer_prefix}")
+    
+    # Update state immediately to show progress section
+    state.installer_running = True
+    state.installer_show_progress = True
+    state.installer_progress = 5
+    state.installer_status = "Preparing installation..."
+    state.installer_log = f"Installation started...\nMode: {state.installer_mode}\nPrefix: {state.installer_prefix}\n"
+    
+    # Force state update
+    state.flush()
+    
+    # Start installation in background thread with timeout
+    thread = threading.Thread(
+        target=run_installation_thread_safe,
+        daemon=True
+    )
+    thread.start()
+    
+    log("info", "Installation thread started")
+
+def run_installation_thread_safe():
+    """Simplified installation thread that's more robust"""
+    import datetime
+    
+    try:
+        log("info", "Installation thread running...")
+        
+        # Basic setup
+        state.installer_progress = 10
+        state.installer_status = "Validating configuration..."
+        
+        install_dir = Path(state.installer_prefix).expanduser().resolve()
+        install_dir.mkdir(parents=True, exist_ok=True)
+        
+        log("info", f"Installing to: {install_dir}")
+        log("info", f"Mode: {state.installer_mode}")
+        
+        state.installer_progress = 30
+        state.installer_status = "Running SU2 installer..."
+        state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Running installer...\n"
+        
+        # Call the installer directly without complex output capture
+        installer_install(
+            mode=state.installer_mode,
+            prefix=install_dir,
+            enable_pywrapper=state.installer_pywrapper,
+            enable_mpi=state.installer_mpi,
+            enable_autodiff=state.installer_autodiff,
+            jobs=state.installer_jobs
+        )
+        
+        log("info", "Installation completed successfully!")
+        
+        # Simple state update
+        state.installer_progress = 100
+        state.installer_status = "Installation completed successfully!"
+        state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Installation completed successfully!\n"
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"Installation failed: {str(e)}"
+        log("error", error_msg)
+        log("error", traceback.format_exc())
+        
+        # Simple error state update
+        state.installer_progress = 50
+        state.installer_status = f"Installation failed: {str(e)}"
+        state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Installation failed: {str(e)}\n"
+        state.installer_log += f"\nError details:\n{traceback.format_exc()}\n"
+        
+    finally:
+        # Always reset running state
+        state.installer_running = False
+        log("info", "Installation thread finished")
+
+@ctrl.add("show_system_info")
+def show_system_info():
+    """Show system information dialog"""
+    try:
+        info = get_system_info()
+        capabilities = detect_installation_capabilities()
+        
+        info_text = "System Information:\n"
+        info_text += "="*50 + "\n"
+        for key, value in info.items():
+            info_text += f"{key.replace('_', ' ').title()}: {value}\n"
+        
+        info_text += "\nInstallation Capabilities:\n"
+        info_text += "="*50 + "\n"
+        for method, available in capabilities.items():
+            status = "✔" if available else "✗"
+            info_text += f"{status} {method.title()}\n"
+        
+        state.installer_log = info_text
+        state.installer_show_progress = True
+        state.installer_dialog_visible = True
+    except Exception as e:
+        log("error", f"Failed to get system info: {e}")
+
+def run_installation_thread():
+    """Run installation in background thread with proper completion handling"""
+    import asyncio
+    import sys
+    import io
+    import traceback
+    import datetime
+    import subprocess
+    import time
+    
+    def simple_update(progress, message):
+        """Simple state update without async complexity"""
+        try:
+            state.installer_progress = progress
+            state.installer_status = message
+            timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+            state.installer_log += f"[{timestamp}] {message}\n"
+            log("info", f"Installer: {message}")
+        except Exception as e:
+            log("error", f"Failed to update installer state: {e}")
+    
+    try:
+        simple_update(10, "Starting installation...")
+        
+        # Validate inputs
+        install_dir = Path(state.installer_prefix).expanduser().resolve()
+        install_dir.mkdir(parents=True, exist_ok=True)
+        
+        simple_update(20, "Preparing installation...")
+        simple_update(30, "Running SU2 installer...")
+        
+        # Import and run installer
+        from installer import install as installer_install
+        
+        # Run the installation
+        installer_install(
+            mode=state.installer_mode,
+            prefix=install_dir,
+            enable_pywrapper=state.installer_pywrapper,
+            enable_mpi=state.installer_mpi,
+            enable_autodiff=state.installer_autodiff,
+            jobs=state.installer_jobs
+        )
+        
+        simple_update(80, "Installation completed, validating...")
+        
+        # Check if installation was successful
+        su2_bin_dir = install_dir / "bin"
+        if su2_bin_dir.exists():
+            binaries = list(su2_bin_dir.glob("su2_*"))
+            if binaries:
+                simple_update(90, f"Found {len(binaries)} SU2 binaries")
+                for binary in binaries[:3]:  # Show first 3 binaries
+                    simple_update(90, f" {binary.name}")
+            else:
+                simple_update(90, " No SU2 binaries found")
+        
+        # Final success message
+        simple_update(100, " SU2 installation completed successfully!")
+        
+        # Add completion summary to log
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        state.installer_log += f"\n[{timestamp}] Installation Summary:\n"
+        state.installer_log += f"[{timestamp}] Installation directory: {install_dir}\n"
+        state.installer_log += f"[{timestamp}] Installation mode: {state.installer_mode}\n"
+        state.installer_log += f"[{timestamp}] Installation completed successfully!\n"
+        
+        time.sleep(1)  # Give UI time to update
+        
+    except Exception as e:
+        error_msg = f"Installation failed: {str(e)}"
+        simple_update(50, error_msg)
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        state.installer_log += f"\n[{timestamp}]  {error_msg}\n"
+        state.installer_log += f"[{timestamp}] Error details:\n{traceback.format_exc()}\n"
+        log("error", f"Installation failed: {e}")
+        log("error", traceback.format_exc())
+        
+    finally:
+        # Always reset running state
+        time.sleep(0.5)  # Small delay to ensure final updates are visible
+        state.installer_running = False
+        log("info", "Installation thread finished")
+
+def update_installer_progress_thread_safe(progress: int, status: str):
+    """Update installation progress from background thread"""
+    try:
+        # Direct state update - simpler and more reliable than async
+        state.installer_progress = progress
+        state.installer_status = status
+        log("info", f"Installer progress: {progress}% - {status}")
+    except Exception as e:
+        log("error", f"Failed to update installer progress: {e}")
+
+def log_installer_message_thread_safe(message: str):
+    """Add message to installer log from background thread"""
+    import datetime
+    try:
+        # Add timestamp to message
+        timestamp = datetime.datetime.now().strftime("%H:%M:%S")
+        formatted_message = f"[{timestamp}] {message}"
+        state.installer_log += f"{formatted_message}\n"
+        
+        # Limit log size to prevent memory issues (keep last 1000 lines)
+        lines = state.installer_log.split('\n')
+        if len(lines) > 1000:
+            state.installer_log = '\n'.join(lines[-1000:])
+            
+        log("info", f"Installer log: {message}")
+    except Exception as e:
+        log("error", f"Failed to log installer message: {e}")
+
+def update_installer_progress(progress: int, status: str):
+    """Update installation progress - only call from main thread"""
+    state.installer_progress = progress
+    state.installer_status = status
+
+def log_installer_message(message: str):
+    """Add message to installer log - only call from main thread"""
+    state.installer_log += f"{message}\n"
+
+
 # -----------------------------------------------------------------------------
 # GUI elements
 # -----------------------------------------------------------------------------
@@ -1142,7 +1510,7 @@ def on_action(event):
     #log("info", f"on_action = {event}")
     _id = event.get("id")
     _action = event.get("action")
-    if _action.startswith("collap"):
+    if isinstance(_action, str) and _action.startswith("collap"):
         log("info", pipeline.toggle_collapsed(_id))
 
 def on_event(event):
@@ -1155,7 +1523,13 @@ def pipeline_widget():
     trame.GitTree(
         sources = ("git_tree", pipeline),
         ### collabsable gittree: ###
-        action_map=("icons", local_file_manager.assets),
+        action_map=(
+            "icons",
+            {
+                "collapsed": collapsed_icon_url,
+                "collapsible": collapsible_icon_url,
+            },
+        ),
         # size of the icon
         action_size=25,
         width=350,
@@ -1215,12 +1589,176 @@ def standard_buttons():
        vuetify.VIcon("mdi-folder-multiple-outline", classes="ml-2")
 
 
+def installer_dialog_card():
+    """Build the installer dialog"""
+    with vuetify.VDialog(
+        v_model=("installer_dialog_visible", False),
+        max_width="900",
+        persistent=True,
+        scrollable=True
+    ):
+        with vuetify.VCard():
+            with vuetify.VCardTitle(classes="d-flex align-center"):
+                vuetify.VIcon("mdi-download", classes="mr-2")
+                html.Span("SU2 Installation Wizard")
+                vuetify.VSpacer()
+                vuetify.VBtn(
+                    icon="mdi-close",
+                    variant="text",
+                    click=close_installer_dialog,
+                    disabled=("installer_running", False)
+                )
+            
+            with vuetify.VCardText():
+                with vuetify.VContainer():
+                    # Installation mode selection
+                    with vuetify.VRow():
+                        with vuetify.VCol(cols=12):
+                            vuetify.VSelect(
+                                label="Installation Mode",
+                                v_model=("installer_mode", "binaries"),
+                                items=[
+                                    {"title": "Pre-compiled Binaries (Recommended)", "value": "binaries"},
+                                    {"title": "Build from Source", "value": "source"},
+                                    {"title": "Conda Package", "value": "conda"}
+                                ],
+                                outlined=True,
+                                hint="Choose how to install SU2"
+                            )
+                    
+                    # Installation directory
+                    with vuetify.VRow():
+                        with vuetify.VCol(cols=12):
+                            vuetify.VTextField(
+                                label="Installation Directory",
+                                v_model=("installer_prefix",),
+                                outlined=True,
+                                hint="Directory where SU2 will be installed"
+                            )
+                    
+                    # Source build options
+                    with vuetify.VExpandTransition():
+                        with vuetify.VCard(
+                            v_show="installer_mode === 'source'",
+                            variant="outlined",
+                            classes="mt-4"
+                        ):
+                            with vuetify.VCardTitle():
+                                vuetify.VIcon("mdi-cog", classes="mr-2")
+                                html.Span("Build Configuration")
+                            
+                            with vuetify.VCardText():
+                                with vuetify.VRow():
+                                    with vuetify.VCol(cols=12):
+                                        vuetify.VCheckbox(
+                                            label="Enable Python Wrapper (pysu2)",
+                                            v_model=("installer_pywrapper", False),
+                                            hint="Build Python bindings for SU2"
+                                        )
+                                    
+                                    with vuetify.VCol(cols=6):
+                                        vuetify.VCheckbox(
+                                            label="Enable MPI Support",
+                                            v_model=("installer_mpi", False),
+                                            hint="Enable parallel processing"
+                                        )
+                                    
+                                    with vuetify.VCol(cols=6):
+                                        vuetify.VCheckbox(
+                                            label="Enable Automatic Differentiation",
+                                            v_model=("installer_autodiff", False),
+                                            hint="Enable AD capabilities"
+                                        )
+                                    
+                                    with vuetify.VCol(cols=12):
+                                        vuetify.VSlider(
+                                            label="Build Jobs",
+                                            v_model=("installer_jobs", 4),
+                                            min=1,
+                                            max=16,
+                                            step=1,
+                                            thumb_label=True,
+                                            hint="Number of parallel build jobs"
+                                        )
+                    
+                    # Progress section
+                    with vuetify.VExpandTransition():
+                        with vuetify.VCard(
+                            v_show=("installer_show_progress", False),
+                            variant="outlined",
+                            classes="mt-4"
+                        ):
+                            with vuetify.VCardTitle():
+                                vuetify.VIcon("mdi-progress-download", classes="mr-2")
+                                html.Span("Installation Progress")
+                            
+                            with vuetify.VCardText():
+                                # Progress bar
+                                vuetify.VProgressLinear(
+                                    v_model=("installer_progress", 0),
+                                    height="25",
+                                    color="primary",
+                                    striped=True,
+                                    rounded=True
+                                )
+                                
+                                # Status text
+                                with vuetify.VRow(classes="mt-3"):
+                                    with vuetify.VCol():
+                                        html.P(
+                                            "{{ installer_status }}",
+                                            classes="text-h6 mb-2"
+                                        )
+                                
+                                # Log output
+                                vuetify.VTextarea(
+                                    v_model=("installer_log", ""),
+                                    label="Installation Log",
+                                    readonly=True,
+                                    rows=10,
+                                    variant="outlined",
+                                    classes="mt-3",
+                                    auto_grow=False
+                                )
+            
+            with vuetify.VCardActions():
+                # System capabilities info
+                with vuetify.VChip(
+                    small=True,
+                    color="info",
+                    classes="mr-2"
+                ):
+                    vuetify.VIcon("mdi-information", left=True, small=True)
+                    html.Span("{{ installer_capabilities.binaries ? 'Binaries Available' : 'No Binaries' }}")
+                
+                vuetify.VSpacer()
+                
+                # Action buttons
+                vuetify.VBtn(
+                    "Cancel",
+                    color="grey",
+                    variant="text",
+                    click=close_installer_dialog,
+                    disabled=("installer_running", False)
+                )
+                
+                vuetify.VBtn(
+                    "Install",
+                    color="primary",
+                    click=start_installation,
+                    disabled=("installer_running", False),
+                    loading=("installer_running", False)
+                )
+
+
+
 # -----------------------------------------------------------------------------
 # Web App setup
 # -----------------------------------------------------------------------------
 
 state.trame__title = "SU2 GUI"
-state.trame__favicon = local_file_manager.assets['favicon']
+# Ensure favicon is a plain string URL
+state.trame__favicon = favicon_url
 
 with SinglePageWithDrawerLayout(server) as layout:
 
@@ -1236,13 +1774,32 @@ with SinglePageWithDrawerLayout(server) as layout:
 
         #vuetify.VSpacer()
         with vuetify.VBtn():
-          vuetify.VImg(
-            src=local_file_manager.assets['su2logo'],
-            contain=True,
-            height=50,
-            width=50,
-          )
-
+            vuetify.VImg(
+                src=su2logo_url,
+                contain=True,
+                height=50,
+                width=50,
+            )
+        # vuetify.VBtn(
+        #     "Install SU2",
+        #     icon="mdi-download",
+        #     color="primary",
+        #     variant="outlined",
+        #     click=open_installer_dialog,
+        #     disabled=("installer_running", False)
+        # )
+        
+        # System info button
+        vuetify.VBtn(
+            "Install SU2",
+            icon="mdi-information",
+            click=show_system_info,
+            title="System Information",
+            width=150,
+            classes="ml-2",
+            color="primary",
+            variant="outlined",
+        )
         # vertical spacer inside the toolbar
         vuetify.VSpacer()
 
@@ -1352,9 +1909,13 @@ with SinglePageWithDrawerLayout(server) as layout:
         log("info", "initialize mesh card")
         mesh_card()
         mesh_subcard()
-        #
-        log("info", "initialize fileio card")
+        #        log("info", "initialize fileio card")
         fileio_card()
+        #
+        
+        log("info", "initialize variables card")
+        variables_card()
+        variables_subcard()
         #
 
         log("info", "initialize solver card")
@@ -1371,13 +1932,16 @@ with SinglePageWithDrawerLayout(server) as layout:
         materials_dialog_card_fluid()
         materials_dialog_card_viscosity()
         materials_dialog_card_cp()
-        materials_dialog_card_conductivity()
-        # boundaries dialogs
+        materials_dialog_card_conductivity()        # boundaries dialogs
         boundaries_dialog_card_inlet()
         boundaries_dialog_card_outlet()
         boundaries_dialog_card_wall()
         boundaries_dialog_card_farfield()
         boundaries_dialog_card_supersonic_inlet()
+        # variables dialogs
+        variables_dialog_cards()
+        # schema manager dialog
+        create_schema_dialog()
         # error/warn dialog
         Error_dialog_card()
         Warn_dialog_card()
@@ -1390,17 +1954,15 @@ with SinglePageWithDrawerLayout(server) as layout:
         set_json_initialization()
         set_json_fileio()
         set_json_numerics()
-        set_json_solver()
-
-        # set config file data in config_str
+        set_json_solver()        # set config file data in config_str
         update_config_str()
+        installer_dialog_card()
         #this necessary here?
         #state.dirty('jsonData')
 
     log("info", "setting up layout content")
     with layout.content:
-
-      # create the tabs
+          # create the tabs
       with vuetify.VTabs(v_model=("active_tab", 0), right=True):
         vuetify.VTab("Geometry")
         vuetify.VTab("History")
@@ -1493,23 +2055,20 @@ with SinglePageWithDrawerLayout(server) as layout:
                 ):
                   with trame.SizeObserver("figure_size"):
                     html_figure = tramematplotlib.Figure(style="position: absolute")
-                    ctrl.update_figure = html_figure.update
-
-            # Third Tab
-            config_tab()
-
-            # Fourth Tab
+                    ctrl.update_figure = html_figure.update            # Third Tab
+            config_tab()            # Fourth Tab
             logs_tab()
 
 
     log("info", "finalizing drawer layout")
+
 
 # -----------------------------------------------------------------------------
 # CLI
 # -----------------------------------------------------------------------------
 
 def check_su2(path=None):
-  """Check if SU2 is installed and accessible, prompt for path if not."""
+  
   
   # First check if a path is provided as a parameter
   if path:
@@ -1607,6 +2166,7 @@ def main():
     parser.add_argument('--su2', type=str, help='Path to the SU2_CFD executable. Overrides stored path.')
     parser.add_argument('--clear-data', action='store_true', help='Clear all application data including saved configurations and cases.')
     parser.add_argument('-v', '--version', action='store_true', help='Print the version of SU2GUI and exit.')
+    parser.add_argument('--install', action='store_true', help='Show installer on startup')
 
 
     args = parser.parse_args()
@@ -1634,6 +2194,8 @@ def main():
     # Store su2_path for use in solver.py
     state.su2_cfd_path = su2_path
 
+    if args.install:
+        state.installer_dialog_visible = True
 
     if case:
         case_args(case)
@@ -1707,3 +2269,13 @@ def main():
 
 if __name__=="__main__":
     main()
+
+
+# 10
+# id_variables  = pipeline.add_node(parent=id_solver,    name="Variables",
+#                                  subui="none", visible=1, color="#00ACC1", actions=["collapsible"])
+
+
+# Add the Variables tab to the layout
+# layout.content.append(variables_tab)
+

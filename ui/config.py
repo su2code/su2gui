@@ -31,7 +31,7 @@ from core.logger import log
 # Extract state and controller from the server
 state, ctrl = server.state, server.controller
 
-state.cofig_str = ""
+state.config_str = ""
 state.config_desc = f"""%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                              %
 % SU2 configuration file                                                       %
@@ -53,19 +53,18 @@ def add_new_property():
     try:
         value =  float(value)
     except:
-        if value.lower() in ("yes", "true", "no", "false"):
+        if isinstance(value, str) and value.lower() in ("yes", "true", "no", "false"):
             value =  value.lower() == "yes" or value.lower() == "true"
-        elif ',' in value or ' ' in value or ((value.startswith('(') and value.endswith(')')) or (value.startswith('[') and value.endswith(']')) or (value.startswith('{') and value.endswith('}'))) :
+        elif isinstance(value, str) and (',' in value or ' ' in value or ((value.startswith('(') and value.endswith(')')) or (value.startswith('[') and value.endswith(']')) or (value.startswith('{') and value.endswith('}'))) ):
             # Remove parentheses and split by comma
             if value[0]=='(' or value[-1]==')' or value[0]=='[' or value[-1]==']' or value[0]=='{' or value[-1]=='}':
                value = value[1:-1]
             if ',' in value:
                value =  value.split(',')
             else:
-               value = value.split()
-            # Convert each item to an appropriate type
+               value = value.split()            
             value = [v.strip() for v in value]
-            value = [int(v) if v.isdigit() else v for v in value]
+            value = [int(v) if isinstance(v, str) and v.isdigit() else v for v in value]
     state.new_config_key = state.new_config_key.upper().strip()
     state.jsonData[state.new_config_key] = value
     state.dirty('jsonData')
@@ -94,16 +93,18 @@ def update_new_config_value(value, **kwargs):
 
 @state.change("config_desc")
 def update_config_desc(config_desc, **kwargs):
+    # Be defensive: ensure config_desc is a string before processing
+    text = config_desc if isinstance(config_desc, str) else str(config_desc or "")
     new_config_desc = ""
-    for line in config_desc.splitlines():
+    for line in text.splitlines():
         if not line.startswith("%"):
             line = '%' + line
         new_config_desc += line + "\n"
     state.config_desc = new_config_desc
 
-#################### JSON SCHEMA VALIDATION ####################
-# Validate the dictionary against the JSON schema
-# this will be used later when the JSON schema is ready
+# ################### JSON SCHEMA VALIDATION ####################
+# # Validate the dictionary against the JSON schema
+# # this will be used later when the JSON schema is ready
 # def validate_dict_against_schema():
 #     log("info", state.jsonData)
 #     # Load the JSON schema from the file
@@ -136,12 +137,11 @@ def config_tab():
     with vuetify.VTabItem(
         value=(2,), style="width: 100%; height: 100%; padding: 3rem"
     ):
-        
         markdown.Markdown(
             content = ('config_tab_heading', "Add Properties Manually  \n"), 
             style = "font-weight:bolder;background-color: white; color:black; font-size: larger; "
         )
-
+        
         with vuetify.VRow(
             style= "margin:1rem;"
         ):
@@ -163,8 +163,18 @@ def config_tab():
                     dense=True,
                     hide_details=True,
                 )
-        vuetify.VBtn("Add",click=(add_new_property),
-                        style = "background-color: #3a76de; margin-left: 2rem; color: white; margin-bottom: 1rem;"
+        
+        with vuetify.VRow(style="align-items: center; margin-bottom: 1rem;"):
+            vuetify.VBtn("Add",click=(add_new_property),
+                            style = "background-color: #3a76de; margin-right: 1rem; color: white;"
+                            )
+            vuetify.VBtn("Validate Config",
+                        click=ctrl.validate_current_config,
+                        style = "background-color: #28a745; margin-right: 1rem; color: white;"
+                        )
+            vuetify.VBtn("Schema Manager",
+                        click=ctrl.open_schema_manager,
+                        style = "background-color: #17a2b8; margin-right: 1rem; color: white;"
                         )
 
         markdown.Markdown(
@@ -190,6 +200,37 @@ def config_tab():
                 )
                 
         markdown.Markdown(
-            content = ('config_str', state.confing_str), 
+            content = ('config_str', state.config_str), 
             style = "background-color: white;"
         )
+
+@ctrl.trigger("validate_current_config")
+def validate_current_config():
+    """Validate current configuration against JSON schema"""
+    try:
+        # Import validator locally to avoid circular imports
+        from core.json_validation import validate_config_standalone
+        
+        # Use the standalone validator
+        case_config_path = str(Path(__file__).parent.parent / "user" / state.case_name / "config_new.json")
+        schema_path = str(Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json")
+        
+        # Perform validation
+        is_valid = validate_config_standalone(schema_path, case_config_path)
+        
+        if is_valid:
+            log("info", " Configuration validation successful")
+        else:
+            log("error", " Configuration validation failed - check log for details")
+        
+        return is_valid
+        
+    except Exception as e:
+        log("error", f"Configuration validation error: {e}")
+        return False
+
+@ctrl.trigger("open_schema_manager")
+def open_schema_manager():
+    """Open schema management dialog"""
+    from ui.schema_manager import open_schema_dialog
+    open_schema_dialog()

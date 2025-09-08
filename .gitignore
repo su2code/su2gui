@@ -1,6 +1,7 @@
 # ignore all files in directory
 *.pex
 __pycache__/*
+*/__pycache__/*
 /venv/*
 *.pyc
 *.err 
@@ -10,3 +11,6 @@ __pycache__/*
 *.vtm
 /user/*
 user/*.log
+
+e
+
