@@ -25,6 +25,18 @@ if not hasattr(state, 'derived_parameters') or state.derived_parameters is None:
 # Initialize default state variables for Variables
 state.variables_list = []
 state.derived_parameters_list = []
+state.variables_table_headers = [
+    {"text": "Name", "value": "name", "sortable": True},
+    {"text": "Value", "value": "value", "sortable": True},
+    {"text": "Description", "value": "description", "sortable": False},
+    {"text": "Actions", "value": "actions", "sortable": False, "width": "120px"}
+]
+state.derived_params_table_headers = [
+    {"text": "Name", "value": "name", "sortable": True},
+    {"text": "Definition", "value": "definition", "sortable": True},
+    {"text": "Description", "value": "description", "sortable": False},
+    {"text": "Actions", "value": "actions", "sortable": False, "width": "120px"}
+]
 
 # Initialize state for all handlers
 state.addVariable = False
@@ -51,7 +63,7 @@ state.confirmDeleteDerivedParameter = False
 state.last_generated_wrapper_path = ""
 state.show_wrapper_path_info = False
 
-# Initialize button click trigger variables  
+# Initialize button click trigger variables
 state.openVariableDialog = False
 state.openDerivedDialog = False
 state.cancelVariableDialog = False
@@ -101,28 +113,28 @@ state.derived_form_valid = False
 state.edit_variable_form_valid = False
 state.edit_derived_form_valid = False
 
-# Variables selection indices for main UI  
+# Variables selection indices for main UI
 state.variables_main_selection = 0
 
 # List options for variables management
 state.LVariablesMain = [
     {"text": "Variables", "value": 0},
-    {"text": "Derived Parameters", "value": 1}, 
+    {"text": "Derived Parameters", "value": 1},
     {"text": "Python Wrapper", "value": 2},
 ]
 
 ###############################################################
-# ACTION HANDLER FUNCTIONS 
+# ACTION HANDLER FUNCTIONS
 ###############################################################
 
 def edit_variable_action(event, item_name):
     # Handle JSON-to-Python data conversion
     item_name = json.loads(item_name) if isinstance(item_name, str) else item_name
-    
+
     if not hasattr(state, 'variables') or item_name not in state.variables:
         log("error", f"Variable {item_name} not found")
         return
-    
+
     var = state.variables[item_name]
     state.edit_variable_name = item_name
     state.edit_variable_value = var.get("value", "")
@@ -130,26 +142,26 @@ def edit_variable_action(event, item_name):
     state.edit_variable_dialog = True
 
 def delete_variable_action(event, item_name):
-    # Handle variable delete    
+    # Handle variable delete
     item_name = json.loads(item_name) if isinstance(item_name, str) else item_name
-    
+
     if not hasattr(state, 'variables') or item_name not in state.variables:
         log("error", f"Variable {item_name} not found")
         return
-    
+
     # Show confirmation dialog
     state.item_to_delete = item_name
     state.item_type_to_delete = "variable"
     state.confirm_delete_variable_dialog = True
 
 def edit_derived_parameter_action(event, item_name):
-    # Handle derived parameter edit    
+    # Handle derived parameter edit
     item_name = json.loads(item_name) if isinstance(item_name, str) else item_name
-    
+
     if not hasattr(state, 'derived_parameters') or item_name not in state.derived_parameters:
         log("error", f"Derived parameter {item_name} not found")
         return
-    
+
     param = state.derived_parameters[item_name]
     state.edit_derived_parameter_name = item_name
     state.edit_derived_parameter_definition = param.get("definition", "")
@@ -157,9 +169,9 @@ def edit_derived_parameter_action(event, item_name):
     state.edit_derived_parameter_dialog = True
 
 def delete_derived_parameter_action(event, item_name):
-    # Handle derived parameter delete     
+    # Handle derived parameter delete
     item_name = json.loads(item_name) if isinstance(item_name, str) else item_name
-    
+
     if not hasattr(state, 'derived_parameters') or item_name not in state.derived_parameters:
         log("error", f"Derived parameter {item_name} not found")
         return
@@ -169,7 +181,7 @@ def delete_derived_parameter_action(event, item_name):
     state.confirm_delete_derived_parameter_dialog = True
 
 def handle_click(action, *args):
-    # Generic click handler 
+    # Generic click handler
     try:
         if hasattr(ctrl, action) and callable(getattr(ctrl, action)):
             getattr(ctrl, action)(*args)
@@ -182,10 +194,10 @@ def handle_click(action, *args):
 # PIPELINE CARD : VARIABLES
 ###############################################################
 def variables_card():
-    # the variables management 
+    # the variables management
     with ui_card(title="Variables", ui_name="Variables"):
         log("info", "     ## Variables Management ##")
-        
+
         # Main selection dropdown for variables management
         with vuetify.VRow(classes="pt-2"):
             with vuetify.VCol(cols="12"):
@@ -204,7 +216,7 @@ def variables_card():
 ###############################################################
 def variables_subcard():
     # the variables management subcards.
-    
+
     # Variables subcard - shows when variables_main_selection is 0
     with ui_subcard(title="Variables", sub_ui_name="subvariables_vars"):
         with vuetify.VContainer(fluid=True):
@@ -213,12 +225,7 @@ def variables_subcard():
                     vuetify.VCardSubtitle("Define variables that can be used in the configuration")
                       # Variables data table with action buttons
                     with vuetify.VDataTable(
-                        headers=[
-                            {"text": "Name", "value": "name", "sortable": True},
-                            {"text": "Value", "value": "value", "sortable": True},
-                            {"text": "Description", "value": "description", "sortable": False},
-                            {"text": "Actions", "value": "actions", "sortable": False, "width": "120px"}
-                        ],
+                        headers=("variables_table_headers",),
                         items=("variables_list", []),
                         elevation=1,
                         items_per_page=5,
@@ -244,13 +251,13 @@ def variables_subcard():
                         with vuetify.VCol(cols="12"):
                             vuetify.VBtn(
                                 "Add Variable",
-                                color="primary", 
+                                color="primary",
                                 click="openVariableDialog = !openVariableDialog",
                                 disabled=("!can_add_variable",),
                                 block=True
                             )
 
-    # Derived Parameters subcard 
+    # Derived Parameters subcard
     with ui_subcard(title="Derived Parameters", sub_ui_name="subvariables_params"):
         with vuetify.VContainer(fluid=True):
             with vuetify.VRow():
@@ -258,12 +265,7 @@ def variables_subcard():
                     vuetify.VCardSubtitle("Define derived parameters based on variables")
                       # Derived Parameters data table with action buttons
                     with vuetify.VDataTable(
-                        headers=[
-                            {"text": "Name", "value": "name", "sortable": True},
-                            {"text": "Definition", "value": "definition", "sortable": True},
-                            {"text": "Description", "value": "description", "sortable": False},
-                            {"text": "Actions", "value": "actions", "sortable": False, "width": "120px"}
-                        ],
+                        headers=("derived_params_table_headers",),
                         items=("derived_parameters_list", []),
                         elevation=1,
                         items_per_page=5,
@@ -289,7 +291,7 @@ def variables_subcard():
                         with vuetify.VCol(cols="12"):
                             vuetify.VBtn(
                                 "Add Derived Parameter",
-                                color="primary", 
+                                color="primary",
                                 click="openDerivedDialog = !openDerivedDialog",
                                 disabled=("!can_add_derived",),
                                 block=True
@@ -299,7 +301,7 @@ def variables_subcard():
             with vuetify.VRow():
                 with vuetify.VCol(cols="12"):
                     vuetify.VCardSubtitle("Generate Python wrapper for SU2 execution")
-                    
+
                     # WRAPPER GENERATION SECTION
                     with vuetify.VRow(classes="mt-4"):
                         with vuetify.VCol(cols="8"):
@@ -355,7 +357,7 @@ def variables_subcard():
 ###############################################################
 def variables_dialog_cards():
     """Create all the dialog boxes for variables management."""
-    
+
     # Add Variable Dialog
     with vuetify.VDialog(v_model=("add_variable_dialog", False), max_width="500px", persistent=True, close_on_click=False):
         with vuetify.VCard():
@@ -406,7 +408,7 @@ def variables_dialog_cards():
                     disabled=("!variable_form_valid",),
                     click="addVariable = !addVariable"
                 )
-    
+
     # Edit Variable Dialog
     with vuetify.VDialog(v_model=("edit_variable_dialog", False), max_width="500px", persistent=True, close_on_click=False):
         with vuetify.VCard():
@@ -453,7 +455,7 @@ def variables_dialog_cards():
                     disabled=("!edit_variable_form_valid",),
                     click="updateVariable = !updateVariable"
                 )
-    
+
     # Add Derived Parameter Dialog
     with vuetify.VDialog(v_model=("add_derived_parameter_dialog", False), max_width="600px", persistent=True, close_on_click=False):
         with vuetify.VCard():
@@ -503,7 +505,7 @@ def variables_dialog_cards():
                     disabled=("!derived_form_valid",),
                     click="addDerivedParameter = !addDerivedParameter"
                 )
-      
+
     # Edit Derived Parameter Dialog
     with vuetify.VDialog(v_model=("edit_derived_parameter_dialog", False), max_width="600px", persistent=True, close_on_click=False):
         with vuetify.VCard():
@@ -605,7 +607,7 @@ def variables_dialog_cards():
 def update_variables_main_selection(variables_main_selection, **kwargs):
     """Update the active subcard based on main selection."""
     log("info", f"Variables main selection: {variables_main_selection}")
-    
+
     if state.active_ui == "Variables":
         if variables_main_selection == 0:
             state.active_sub_ui = "subvariables_vars"
@@ -638,7 +640,7 @@ def update_variables_list(variables, **kwargs):
     else:
         log("warning", f"variables is not iterable or not a dict: {type(variables)}, value: {variables}")
     state.variables_list = variables_list
-    
+
     # Update button states based on data availability
     update_button_states()
 
@@ -658,7 +660,7 @@ def update_derived_parameters_list(derived_parameters, **kwargs):
             else:
                 log("error", f"Invalid derived parameter format: {name} = {param}")
     state.derived_parameters_list = derived_parameters_list
-    
+
     # Update button states based on data availability
     update_button_states()
 
@@ -691,7 +693,7 @@ def update_button_states():
         (hasattr(state, 'variables') and len(state.variables) > 0) or
         (hasattr(state, 'derived_parameters') and len(state.derived_parameters) > 0)
     )
-    
+
     # Only update if not currently in a dialog operation
     if not state.variable_dialog_open and not state.derived_dialog_open:
         state.can_generate_wrapper = has_data and hasattr(state, 'case_name') and state.case_name
@@ -700,32 +702,32 @@ def update_button_states():
 def get_variable_form_valid():
     """Check if variable form is valid for enabling Save button."""
     return bool(
-        state.new_variable_name and 
+        state.new_variable_name and
         state.new_variable_name.strip() and
-        state.new_variable_value and 
+        state.new_variable_value and
         state.new_variable_value.strip()
     )
 
 def get_derived_form_valid():
     """Check if derived parameter form is valid for enabling Save button."""
     return bool(
-        state.new_derived_parameter_name and 
+        state.new_derived_parameter_name and
         state.new_derived_parameter_name.strip() and
-        state.new_derived_parameter_definition and 
+        state.new_derived_parameter_definition and
         state.new_derived_parameter_definition.strip()
     )
 
 def get_edit_variable_form_valid():
     """Check if edit variable form is valid for enabling Update button."""
     return bool(
-        state.edit_variable_value and 
+        state.edit_variable_value and
         state.edit_variable_value.strip()
     )
 
 def get_edit_derived_form_valid():
     """Check if edit derived parameter form is valid for enabling Update button."""
     return bool(
-        state.edit_derived_parameter_definition and 
+        state.edit_derived_parameter_definition and
         state.edit_derived_parameter_definition.strip()
     )
 
@@ -740,19 +742,19 @@ def open_variable_dialog(**kwargs):
     if not state.can_add_variable:
         log("warning", "Cannot add variable - button is disabled")
         return
-    
+
     # Clear form fields
     state.new_variable_name = ""
     state.new_variable_value = ""
     state.new_variable_description = ""
-    
+
     # Update dialog states
     state.add_variable_dialog = True
     state.variable_dialog_open = True
-    
+
     # Update button states
     state.can_add_variable = False  # Prevent multiple dialogs
-    
+
     log("info", "Variable dialog opened")
 
 @state.change("openDerivedDialog")
@@ -761,18 +763,18 @@ def open_derived_dialog(**kwargs):
     if not state.can_add_derived:
         log("warning", "Cannot add derived parameter - button is disabled")
         return
-    
+
     # Clear form fields
     state.new_derived_parameter_name = ""
     state.new_derived_parameter_definition = ""
     state.new_derived_parameter_description = ""
-    
+
     # Update dialog states
     state.add_derived_parameter_dialog = True
     state.derived_dialog_open = True
       # Update button states
     state.can_add_derived = False  # Prevent multiple dialogs
-    
+
     log("info", "Derived parameter dialog opened")
 
 # Cancel dialog handlers with proper state management
@@ -782,15 +784,15 @@ def cancel_variable_dialog(**kwargs):
     # Close dialog
     state.add_variable_dialog = False
     state.variable_dialog_open = False
-    
+
     # Clear form fields
     state.new_variable_name = ""
     state.new_variable_value = ""
     state.new_variable_description = ""
-    
+
     # Re-enable the add button
     state.can_add_variable = True
-    
+
     log("info", "Variable dialog cancelled")
 
 @state.change("cancelDerivedDialog")
@@ -799,15 +801,15 @@ def cancel_derived_dialog(**kwargs):
     # Close dialog
     state.add_derived_parameter_dialog = False
     state.derived_dialog_open = False
-    
+
     # Clear form fields
     state.new_derived_parameter_name = ""
     state.new_derived_parameter_definition = ""
     state.new_derived_parameter_description = ""
-    
+
     # Re-enable the add button
     state.can_add_derived = True
-    
+
     log("info", "Derived parameter dialog cancelled")
 
 @state.change("showAddVariableDialog")
@@ -824,7 +826,7 @@ def add_variable_ui(**kwargs):
     # Prevent recursive calls by checking if dialog is actually open
     if not state.add_variable_dialog:
         return
-        
+
     # Validate input
     valid, error_msg = validate_variable_input(state.new_variable_name, state.new_variable_value)
     if not valid:
@@ -843,10 +845,10 @@ def add_variable_ui(**kwargs):
         state.new_variable_name = ""
         state.new_variable_value = ""
         state.new_variable_description = ""
-        
+
         # Re-enable the add button
         state.can_add_variable = True
-        
+
         log("info", f"Variable '{state.new_variable_name}' added successfully")
     except Exception as e:
         log("error", f"Failed to add variable: {str(e)}")
@@ -859,28 +861,28 @@ def update_variable_ui(**kwargs):
     # Prevent recursive calls by checking if dialog is actually open
     if not state.edit_variable_dialog:
         return
-        
+
     # Validate input
     valid, error_msg = validate_variable_input(state.edit_variable_name, state.edit_variable_value)
     if not valid:
         log("error", f"Failed to update variable: {error_msg}")
         return
-    
+
     var_name = state.edit_variable_name
     var_value = state.edit_variable_value
     var_description = state.edit_variable_description
-    
+
     # Update the variable
     try:
         if not hasattr(state, 'variables'):
             state.variables = {}
-        
+
         state.variables[var_name] = {
             "value": var_value,
             "description": var_description
         }
         state.dirty("variables")
-        
+
         # Close dialog and clear form only after successful update
         state.edit_variable_dialog = False
         state.edit_variable_name = ""
@@ -896,7 +898,7 @@ def add_derived_parameter_ui(**kwargs):
     # Prevent recursive calls by checking if dialog is actually open
     if not state.add_derived_parameter_dialog:
         return
-        
+
     # Validate input
     valid, error_msg = validate_derived_parameter_input(state.new_derived_parameter_name, state.new_derived_parameter_definition)
     if not valid:
@@ -919,10 +921,10 @@ def add_derived_parameter_ui(**kwargs):
         state.new_derived_parameter_name = ""
         state.new_derived_parameter_definition = ""
         state.new_derived_parameter_description = ""
-        
+
         # Re-enable the add button
         state.can_add_derived = True
-        
+
         log("info", f"Derived parameter '{state.new_derived_parameter_name}' added successfully")
     except Exception as e:
         log("error", f"Failed to add derived parameter: {str(e)}")
@@ -935,28 +937,28 @@ def update_derived_parameter_ui(**kwargs):
     # Prevent recursive calls by checking if dialog is actually open
     if not state.edit_derived_parameter_dialog:
         return
-        
+
     # Validate input
     valid, error_msg = validate_derived_parameter_input(state.edit_derived_parameter_name, state.edit_derived_parameter_definition)
     if not valid:
         log("error", f"Failed to update derived parameter: {error_msg}")
         return
-    
+
     param_name = state.edit_derived_parameter_name
     param_definition = state.edit_derived_parameter_definition
     param_description = state.edit_derived_parameter_description
-    
+
     # Update the derived parameter
     try:
         if not hasattr(state, 'derived_parameters'):
             state.derived_parameters = {}
-        
+
         state.derived_parameters[param_name] = {
             "definition": param_definition,
             "description": param_description
         }
         state.dirty("derived_parameters")
-        
+
         # Close dialog and clear form only after successful update
         state.edit_derived_parameter_dialog = False
         state.edit_derived_parameter_name = ""
@@ -984,7 +986,7 @@ def delete_variable_ui(**kwargs):
     if not item:
         log("info", "delete_variable_ui called without item data during initialization - skipping")
         return
-    
+
     remove_variable(item["name"])
 
 @state.change("deleteDerivedParameter")
@@ -995,7 +997,7 @@ def delete_derived_parameter_ui(**kwargs):
     if not item:
         log("info", "delete_derived_parameter_ui called without item data during initialization - skipping")
         return
-    
+
     remove_derived_parameter(item["name"])
 
 @state.change("generatePythonWrapper")
@@ -1007,22 +1009,22 @@ def generate_python_wrapper_ui(**kwargs):
         return
       # Disable button during generation
     state.can_generate_wrapper = False
-    
+
     try:
         # Check if case name is defined and not empty
         if not hasattr(state, 'case_name') or not state.case_name:
             log("info", "Case name is not defined or empty, cannot generate Python wrapper")
             return
-        
-        filename_json_export = getattr(state, 'filename_json_export', 'config.json')
-        filename_cfg_export = getattr(state, 'filename_cfg_export', 'config.cfg')
-        filename_py_export = getattr(state, 'python_wrapper_filename', 'run_su2.py')
-        
+
+        filename_json_export = getattr(state, 'filename_json_export', 'config.json') or 'config.json'
+        filename_cfg_export = getattr(state, 'filename_cfg_export', 'config.cfg') or 'config.cfg'
+        filename_py_export = getattr(state, 'python_wrapper_filename', 'run_su2.py') or 'run_su2.py'
+
         variables = get_variables_dict()
         derived_parameters = get_derived_parameters_dict()
           # For standard wrapper, disable dynamic temperature
         dynamic_wall_temp_markers = {}
-        
+
         # Save files with standard wrapper
         generated_wrapper_path = save_json_cfg_py_file(
             filename_json_export,
@@ -1032,7 +1034,7 @@ def generate_python_wrapper_ui(**kwargs):
             derived_parameters=derived_parameters,
             dynamic_wall_temp_markers=dynamic_wall_temp_markers
         )
-        
+
         if generated_wrapper_path:
             state.last_generated_wrapper_path = generated_wrapper_path
             state.show_wrapper_path_info = True
@@ -1055,25 +1057,25 @@ def generate_python_wrapper_ui(**kwargs):
 #     if not state.can_generate_wrapper:
 #         log("warning", "Cannot generate wrapper - button is disabled")
 #         return
-#     
+#
 #     # Disable button during generation
 #     state.can_generate_wrapper = False
-#     
+#
 #     try:
 #         # Check if case name is defined and not empty
 #         if not hasattr(state, 'case_name') or not state.case_name:
 #             log("info", "Case name is not defined or empty, cannot generate Python wrapper")
 #             return
-#         
+#
 #         filename_json_export = getattr(state, 'filename_json_export', 'config.json')
 #         filename_cfg_export = getattr(state, 'filename_cfg_export', 'config.cfg')
 #         filename_py_export = getattr(state, 'dynamic_temp_wrapper_filename', 'run_su2.py')
-#         
+#
 #         variables = get_variables_dict()
 #         derived_parameters = get_derived_parameters_dict()
 #           # Create dynamic wall temperature markers dictionary
 #         dynamic_wall_temp_markers = {"airfoil": state.dynamic_temp_function}
-#         
+#
 #         # Save files with dynamic temperature
 #         generated_wrapper_path = save_json_cfg_py_file(
 #             filename_json_export,
@@ -1083,7 +1085,7 @@ def generate_python_wrapper_ui(**kwargs):
 #             derived_parameters=derived_parameters,
 #             dynamic_wall_temp_markers=dynamic_wall_temp_markers
 #         )
-#         
+#
 #         if generated_wrapper_path:
 #             state.last_generated_wrapper_path = generated_wrapper_path
 #             state.show_wrapper_path_info = True

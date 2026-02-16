@@ -24,7 +24,7 @@ from core.su2_json import *
 from core.su2_io import save_su2mesh, save_json_cfg_file
 #
 from ui.vtk_helper import *
-# 
+#
 from ui.cases import update_manage_case_dialog_card, manage_case_dialog_card, case_name_dialog_card, case_args
 #
 # Definition of ui_card and the server.
@@ -124,7 +124,7 @@ from ui.variables import *
 
 # -----------------------------------------------------------------------------
 from ui.schema_manager import (
-    load_schema_properties, 
+    load_schema_properties,
     validate_configuration,
     add_schema_property,
     remove_schema_property,
@@ -206,6 +206,11 @@ state.installer_status = "Ready"
 state.installer_log = ""
 state.installer_running = False
 state.installer_show_progress = False
+state.installer_mode_items = [
+    {"title": "Pre-compiled Binaries (Recommended)", "value": "binaries"},
+    {"title": "Build from Source", "value": "source"},
+    {"title": "Conda Package", "value": "conda"}
+]
 
 # Check system capabilities
 try:
@@ -218,7 +223,7 @@ except:
 clear_logs()
 log("info" , f"""
 ****************************************
-Base path = {BASE}    
+Base path = {BASE}
 ****************************************
 """
     )
@@ -671,7 +676,7 @@ def update_mesh_color_by_name(mesh_color_array_idx, **kwargs):
     log("info", "change mesh color by array")
 
     if mesh_color_array_idx < len(state.dataset_arrays):
-        array = state.dataset_arrays[mesh_color_array_idx]  
+        array = state.dataset_arrays[mesh_color_array_idx]
     else:
         array =  {'text': 'Solid', 'value': 0, 'range': [1.0, 1.0], 'type': 0}
 
@@ -1019,7 +1024,7 @@ def load_file_su2(su2_file_upload, **kwargs):
         # nijso TODO BUG does not contain data yet
         #for iMarker in range(numMarkers):
         #  markergrid[iMarker].GetPointData().RemoveArray(arrayName)
-       
+
     # and we only use the default array
     state.dataset_arrays = []
 
@@ -1140,7 +1145,7 @@ def load_file_su2(su2_file_upload, **kwargs):
     coord_axes = MakeOrientationMarkerWidget(axes1)
 
     resetCamera()
-    
+
     update_config_str()
     state.dirty('restartFile')
 
@@ -1166,6 +1171,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
     # reading each line of configuration file
     f = filecontent.splitlines()
     cfglist = []
+
     f = [element for element in f
          if isinstance(element, str) and element.strip() and not element.strip().startswith('%')]
 
@@ -1181,7 +1187,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
             cfglist[-1] += item
         else:
             cfglist.append(item)
-    
+
     cfg_dict = {}
     for item in cfglist:
         if '=' not in item:
@@ -1189,7 +1195,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
         key, value = item.split('=', 1)
         key = key.strip()
         value = value.strip()
-        
+
         # Convert value to appropriate type (only if it's a string)
         if isinstance(value, str) and value and ((value.startswith('(') and value.endswith(')')) or ',' in value or ' ' in value):
             # Remove parentheses and split by comma
@@ -1207,7 +1213,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
         elif isinstance(value, str) and (value.upper() == 'YES' or value.upper() == 'TRUE'):
             value = True
         elif isinstance(value, str) and (value.upper() == 'NO' or value.upper() == 'FALSE'):
-            value = False   
+            value = False
         elif isinstance(value, str) and value.upper() == 'NONE':
             value = None
         else:
@@ -1215,7 +1221,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
                 value = float(value)
             except ValueError:
                 pass # Keep as string if it cannot be converted to int or float
-        
+
         cfg_dict[key] = value
 
 
@@ -1234,7 +1240,7 @@ def load_cfg_file(cfg_file_upload, **kwargs):
     state.jsonData = cfg_dict
     state.dirty('jsonData')
 
-      
+
     # save the cfg file
     # save_json_cfg_file(state.filename_json_export,state.filename_cfg_export)
 
@@ -1261,7 +1267,7 @@ def open_installer_dialog():
     state.installer_progress = 0
     state.installer_status = "Ready to install"
     state.installer_log = ""
-    
+
     # Update system capabilities
     try:
         capabilities = detect_installation_capabilities()
@@ -1280,47 +1286,47 @@ def start_installation():
     """Start the SU2 installation process"""
     log("info", f"Starting installation with mode: {state.installer_mode}")
     log("info", f"Installation prefix: {state.installer_prefix}")
-    
+
     # Update state immediately to show progress section
     state.installer_running = True
     state.installer_show_progress = True
     state.installer_progress = 5
     state.installer_status = "Preparing installation..."
     state.installer_log = f"Installation started...\nMode: {state.installer_mode}\nPrefix: {state.installer_prefix}\n"
-    
+
     # Force state update
     state.flush()
-    
+
     # Start installation in background thread with timeout
     thread = threading.Thread(
         target=run_installation_thread_safe,
         daemon=True
     )
     thread.start()
-    
+
     log("info", "Installation thread started")
 
 def run_installation_thread_safe():
     """Simplified installation thread that's more robust"""
     import datetime
-    
+
     try:
         log("info", "Installation thread running...")
-        
+
         # Basic setup
         state.installer_progress = 10
         state.installer_status = "Validating configuration..."
-        
+
         install_dir = Path(state.installer_prefix).expanduser().resolve()
         install_dir.mkdir(parents=True, exist_ok=True)
-        
+
         log("info", f"Installing to: {install_dir}")
         log("info", f"Mode: {state.installer_mode}")
-        
+
         state.installer_progress = 30
         state.installer_status = "Running SU2 installer..."
         state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Running installer...\n"
-        
+
         # Call the installer directly without complex output capture
         installer_install(
             mode=state.installer_mode,
@@ -1330,26 +1336,26 @@ def run_installation_thread_safe():
             enable_autodiff=state.installer_autodiff,
             jobs=state.installer_jobs
         )
-        
+
         log("info", "Installation completed successfully!")
-        
+
         # Simple state update
         state.installer_progress = 100
         state.installer_status = "Installation completed successfully!"
         state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Installation completed successfully!\n"
-        
+
     except Exception as e:
         import traceback
         error_msg = f"Installation failed: {str(e)}"
         log("error", error_msg)
         log("error", traceback.format_exc())
-        
+
         # Simple error state update
         state.installer_progress = 50
         state.installer_status = f"Installation failed: {str(e)}"
         state.installer_log += f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] Installation failed: {str(e)}\n"
         state.installer_log += f"\nError details:\n{traceback.format_exc()}\n"
-        
+
     finally:
         # Always reset running state
         state.installer_running = False
@@ -1361,18 +1367,18 @@ def show_system_info():
     try:
         info = get_system_info()
         capabilities = detect_installation_capabilities()
-        
+
         info_text = "System Information:\n"
         info_text += "="*50 + "\n"
         for key, value in info.items():
             info_text += f"{key.replace('_', ' ').title()}: {value}\n"
-        
+
         info_text += "\nInstallation Capabilities:\n"
         info_text += "="*50 + "\n"
         for method, available in capabilities.items():
             status = "✔" if available else "✗"
             info_text += f"{status} {method.title()}\n"
-        
+
         state.installer_log = info_text
         state.installer_show_progress = True
         state.installer_dialog_visible = True
@@ -1388,7 +1394,7 @@ def run_installation_thread():
     import datetime
     import subprocess
     import time
-    
+
     def simple_update(progress, message):
         """Simple state update without async complexity"""
         try:
@@ -1399,20 +1405,20 @@ def run_installation_thread():
             log("info", f"Installer: {message}")
         except Exception as e:
             log("error", f"Failed to update installer state: {e}")
-    
+
     try:
         simple_update(10, "Starting installation...")
-        
+
         # Validate inputs
         install_dir = Path(state.installer_prefix).expanduser().resolve()
         install_dir.mkdir(parents=True, exist_ok=True)
-        
+
         simple_update(20, "Preparing installation...")
         simple_update(30, "Running SU2 installer...")
-        
+
         # Import and run installer
         from installer import install as installer_install
-        
+
         # Run the installation
         installer_install(
             mode=state.installer_mode,
@@ -1422,9 +1428,9 @@ def run_installation_thread():
             enable_autodiff=state.installer_autodiff,
             jobs=state.installer_jobs
         )
-        
+
         simple_update(80, "Installation completed, validating...")
-        
+
         # Check if installation was successful
         su2_bin_dir = install_dir / "bin"
         if su2_bin_dir.exists():
@@ -1435,19 +1441,19 @@ def run_installation_thread():
                     simple_update(90, f" {binary.name}")
             else:
                 simple_update(90, " No SU2 binaries found")
-        
+
         # Final success message
         simple_update(100, " SU2 installation completed successfully!")
-        
+
         # Add completion summary to log
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         state.installer_log += f"\n[{timestamp}] Installation Summary:\n"
         state.installer_log += f"[{timestamp}] Installation directory: {install_dir}\n"
         state.installer_log += f"[{timestamp}] Installation mode: {state.installer_mode}\n"
         state.installer_log += f"[{timestamp}] Installation completed successfully!\n"
-        
+
         time.sleep(1)  # Give UI time to update
-        
+
     except Exception as e:
         error_msg = f"Installation failed: {str(e)}"
         simple_update(50, error_msg)
@@ -1456,7 +1462,7 @@ def run_installation_thread():
         state.installer_log += f"[{timestamp}] Error details:\n{traceback.format_exc()}\n"
         log("error", f"Installation failed: {e}")
         log("error", traceback.format_exc())
-        
+
     finally:
         # Always reset running state
         time.sleep(0.5)  # Small delay to ensure final updates are visible
@@ -1481,12 +1487,12 @@ def log_installer_message_thread_safe(message: str):
         timestamp = datetime.datetime.now().strftime("%H:%M:%S")
         formatted_message = f"[{timestamp}] {message}"
         state.installer_log += f"{formatted_message}\n"
-        
+
         # Limit log size to prevent memory issues (keep last 1000 lines)
         lines = state.installer_log.split('\n')
         if len(lines) > 1000:
             state.installer_log = '\n'.join(lines[-1000:])
-            
+
         log("info", f"Installer log: {message}")
     except Exception as e:
         log("error", f"Failed to log installer message: {e}")
@@ -1608,7 +1614,7 @@ def installer_dialog_card():
                     click=close_installer_dialog,
                     disabled=("installer_running", False)
                 )
-            
+
             with vuetify.VCardText():
                 with vuetify.VContainer():
                     # Installation mode selection
@@ -1617,15 +1623,11 @@ def installer_dialog_card():
                             vuetify.VSelect(
                                 label="Installation Mode",
                                 v_model=("installer_mode", "binaries"),
-                                items=[
-                                    {"title": "Pre-compiled Binaries (Recommended)", "value": "binaries"},
-                                    {"title": "Build from Source", "value": "source"},
-                                    {"title": "Conda Package", "value": "conda"}
-                                ],
+                                items=("installer_mode_items",),
                                 outlined=True,
                                 hint="Choose how to install SU2"
                             )
-                    
+
                     # Installation directory
                     with vuetify.VRow():
                         with vuetify.VCol(cols=12):
@@ -1635,7 +1637,7 @@ def installer_dialog_card():
                                 outlined=True,
                                 hint="Directory where SU2 will be installed"
                             )
-                    
+
                     # Source build options
                     with vuetify.VExpandTransition():
                         with vuetify.VCard(
@@ -1646,7 +1648,7 @@ def installer_dialog_card():
                             with vuetify.VCardTitle():
                                 vuetify.VIcon("mdi-cog", classes="mr-2")
                                 html.Span("Build Configuration")
-                            
+
                             with vuetify.VCardText():
                                 with vuetify.VRow():
                                     with vuetify.VCol(cols=12):
@@ -1655,21 +1657,21 @@ def installer_dialog_card():
                                             v_model=("installer_pywrapper", False),
                                             hint="Build Python bindings for SU2"
                                         )
-                                    
+
                                     with vuetify.VCol(cols=6):
                                         vuetify.VCheckbox(
                                             label="Enable MPI Support",
                                             v_model=("installer_mpi", False),
                                             hint="Enable parallel processing"
                                         )
-                                    
+
                                     with vuetify.VCol(cols=6):
                                         vuetify.VCheckbox(
                                             label="Enable Automatic Differentiation",
                                             v_model=("installer_autodiff", False),
                                             hint="Enable AD capabilities"
                                         )
-                                    
+
                                     with vuetify.VCol(cols=12):
                                         vuetify.VSlider(
                                             label="Build Jobs",
@@ -1680,7 +1682,7 @@ def installer_dialog_card():
                                             thumb_label=True,
                                             hint="Number of parallel build jobs"
                                         )
-                    
+
                     # Progress section
                     with vuetify.VExpandTransition():
                         with vuetify.VCard(
@@ -1691,7 +1693,7 @@ def installer_dialog_card():
                             with vuetify.VCardTitle():
                                 vuetify.VIcon("mdi-progress-download", classes="mr-2")
                                 html.Span("Installation Progress")
-                            
+
                             with vuetify.VCardText():
                                 # Progress bar
                                 vuetify.VProgressLinear(
@@ -1701,7 +1703,7 @@ def installer_dialog_card():
                                     striped=True,
                                     rounded=True
                                 )
-                                
+
                                 # Status text
                                 with vuetify.VRow(classes="mt-3"):
                                     with vuetify.VCol():
@@ -1709,7 +1711,7 @@ def installer_dialog_card():
                                             "{{ installer_status }}",
                                             classes="text-h6 mb-2"
                                         )
-                                
+
                                 # Log output
                                 vuetify.VTextarea(
                                     v_model=("installer_log", ""),
@@ -1720,7 +1722,7 @@ def installer_dialog_card():
                                     classes="mt-3",
                                     auto_grow=False
                                 )
-            
+
             with vuetify.VCardActions():
                 # System capabilities info
                 with vuetify.VChip(
@@ -1730,9 +1732,9 @@ def installer_dialog_card():
                 ):
                     vuetify.VIcon("mdi-information", left=True, small=True)
                     html.Span("{{ installer_capabilities.binaries ? 'Binaries Available' : 'No Binaries' }}")
-                
+
                 vuetify.VSpacer()
-                
+
                 # Action buttons
                 vuetify.VBtn(
                     "Cancel",
@@ -1741,7 +1743,7 @@ def installer_dialog_card():
                     click=close_installer_dialog,
                     disabled=("installer_running", False)
                 )
-                
+
                 vuetify.VBtn(
                     "Install",
                     color="primary",
@@ -1788,7 +1790,7 @@ with SinglePageWithDrawerLayout(server) as layout:
         #     click=open_installer_dialog,
         #     disabled=("installer_running", False)
         # )
-        
+
         # System info button
         vuetify.VBtn(
             "Install SU2",
@@ -1912,7 +1914,7 @@ with SinglePageWithDrawerLayout(server) as layout:
         #        log("info", "initialize fileio card")
         fileio_card()
         #
-        
+
         log("info", "initialize variables card")
         variables_card()
         variables_subcard()
@@ -2068,20 +2070,20 @@ with SinglePageWithDrawerLayout(server) as layout:
 # -----------------------------------------------------------------------------
 
 def check_su2(path=None):
-  
-  
+
+
   # First check if a path is provided as a parameter
   if path:
     executable = path
     if platform.system() == "Windows" and not executable.lower().endswith('.exe'):
       executable += ".exe"
-    
+
     if os.path.isfile(executable):
       try:
-        result = subprocess.run([executable, "--help"], 
-                     stdout=subprocess.PIPE, 
-                     stderr=subprocess.PIPE, 
-                     text=True, 
+        result = subprocess.run([executable, "--help"],
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE,
+                     text=True,
                      timeout=5)
         if "SU2" in result.stdout or "SU2" in result.stderr:
           print(f"Using provided SU2_CFD from: {path}")
@@ -2091,56 +2093,56 @@ def check_su2(path=None):
           print("The provided file does not appear to be SU2_CFD. Falling back to other methods.")
       except (subprocess.SubprocessError, OSError):
         print("Could not execute the provided file. Falling back to other methods.")
-  
+
   # Try to get the path from config
   su2_path = get_su2_path()
-  
+
   # If path exists in config, check if it's valid
   if su2_path:
     executable = su2_path
     if platform.system() == "Windows" and not executable.lower().endswith('.exe'):
       executable += ".exe"
-    
+
     if os.path.isfile(executable) and os.access(executable, os.X_OK):
       print(f"Using SU2_CFD from stored configuration: {su2_path}")
       return su2_path
-  
+
   # Try to find SU2_CFD in PATH
   su2_command = shutil.which("SU2_CFD")
-  
+
   if su2_command:
     print("SU2_GUI is able to access SU2_CFD from system PATH.")
     # Store this path for future use
     set_su2_path(su2_command)
     return su2_command
-  
+
   print("\nSU2 is not found in PATH or stored configuration.")
   print("Please provide the path to the SU2_CFD executable.")
   print("Example: /opt/su2/bin/SU2_CFD or C:\\Program Files\\SU2\\bin\\SU2_CFD.exe")
-  
+
   while True:
     # Get path from user
     user_path = input("SU2_CFD path: ").strip()
-    
+
     if not user_path:
       response = input("Continue without SU2? (y/n): ").strip().lower()
       if response != 'y':
         print("Process aborted. Please install SU2 and try again.")
         exit(1)
       return None
-    
+
     # Check if the path is valid
     executable = user_path
     if platform.system() == "Windows" and not executable.lower().endswith('.exe'):
       executable += ".exe"
-    
+
     if os.path.isfile(executable):
       # Test if it's actually SU2_CFD by running it with --help
       try:
-        result = subprocess.run([executable, "--help"], 
-                     stdout=subprocess.PIPE, 
-                     stderr=subprocess.PIPE, 
-                     text=True, 
+        result = subprocess.run([executable, "--help"],
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE,
+                     text=True,
                      timeout=5)
         if "SU2" in result.stdout or "SU2" in result.stderr:
           print(f"SU2_CFD found at: {user_path}")
@@ -2190,7 +2192,7 @@ def main():
 
     # Check if SU2 is installed and get the path
     su2_path = check_su2(su2_path)
-    
+
     # Store su2_path for use in solver.py
     state.su2_cfd_path = su2_path
 

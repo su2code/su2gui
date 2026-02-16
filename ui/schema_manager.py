@@ -33,6 +33,13 @@ state.new_property_enum = ""
 state.property_types = ["string", "number", "integer", "boolean", "array", "object"]
 state.validation_results = []
 state.schema_validation_status = "Not validated"
+state.schema_table_headers = [
+    {"text": "Property", "value": "name"},
+    {"text": "Type", "value": "type"},
+    {"text": "Description", "value": "description"},
+    {"text": "Default", "value": "default"},
+    {"text": "Actions", "value": "actions", "sortable": False}
+]
 
 @ctrl.trigger("load_schema_properties")
 def load_schema_properties():
@@ -40,11 +47,11 @@ def load_schema_properties():
     try:
         import json
         from pathlib import Path
-        
+
         schema_path = Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json"
         with open(schema_path, 'r') as f:
             schema = json.load(f)
-        
+
         state.schema_properties = schema.get("properties", {})
         log("info", f"Loaded {len(state.schema_properties)} schema properties")
     except Exception as e:
@@ -56,21 +63,21 @@ def validate_configuration():
     try:
         from core.json_validation import validate_config_standalone
         from pathlib import Path
-        
+
         schema_path = str(Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json")
         config_path = str(Path(__file__).parent.parent / "user" / "start" / "config_new.json")
-        
+
         is_valid = validate_config_standalone(schema_path, config_path)
-        
+
         if is_valid:
             state.schema_validation_status = " Valid"
             state.validation_results = []
         else:
             state.schema_validation_status = " Invalid"
             state.validation_results = []  # Simplified - errors logged elsewhere
-        
+
         state.dirty("schema_validation_status", "validation_results")
-        
+
     except Exception as e:
         log("error", f"Validation error: {e}")
         state.schema_validation_status = "Error"
@@ -82,13 +89,13 @@ def add_schema_property():
         if not state.new_property_name.strip():
             log("error", "Property name cannot be empty")
             return
-        
+
         # Create new property definition
         new_prop = {
             "type": state.new_property_type,
             "description": state.new_property_description
         }
-        
+
         # Add default value if provided
         if state.new_property_default.strip():
             try:
@@ -107,7 +114,7 @@ def add_schema_property():
             except (ValueError, json.JSONDecodeError):
                 log("error", f"Invalid default value for type {state.new_property_type}")
                 return
-        
+
         # Add enum values if provided
         if state.new_property_enum.strip() and state.new_property_type == "string":
             enum_values = [val.strip() for val in state.new_property_enum.split(",")]
@@ -115,31 +122,31 @@ def add_schema_property():
           # Update schema
         from pathlib import Path
         schema_path = Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json"
-        
+
         # Load current schema
         with open(schema_path, 'r') as f:
             schema = json.load(f)
-        
+
         if "properties" not in schema:
             schema["properties"] = {}
-        
+
         schema["properties"][state.new_property_name] = new_prop
-        
+
         # Save updated schema
         with open(schema_path, 'w') as f:
             json.dump(schema, f, indent=2)
-        
+
         # Reload properties
         load_schema_properties()
-        
+
         # Clear form
         state.new_property_name = ""
         state.new_property_description = ""
         state.new_property_default = ""
         state.new_property_enum = ""
-        
+
         log("info", f"Added new property: {state.new_property_name}")
-        
+
     except Exception as e:
         log("error", f"Error adding property: {e}")
 
@@ -149,23 +156,23 @@ def remove_schema_property(property_name):
     try:
         from pathlib import Path
         schema_path = Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json"
-        
+
         # Load current schema
         with open(schema_path, 'r') as f:
             schema = json.load(f)
-        
+
         if "properties" in schema and property_name in schema["properties"]:
             del schema["properties"][property_name]
-            
+
             # Save updated schema
             with open(schema_path, 'w') as f:
                 json.dump(schema, f, indent=2)
-                
+
             load_schema_properties()
             log("info", f"Removed property: {property_name}")
         else:
             log("error", f"Property {property_name} not found in schema")
-            
+
     except Exception as e:
         log("error", f"Error removing property: {e}")
 
@@ -175,11 +182,11 @@ def save_schema():
     try:
         from pathlib import Path
         schema_path = Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json"
-        
+
         # Load current schema
         with open(schema_path, 'r') as f:
             schema = json.load(f)
-            
+
         # Save it back (this function can be extended for more operations)
         with open(schema_path, 'w') as f:
             json.dump(schema, f, indent=2)
@@ -193,11 +200,11 @@ def export_schema():
     try:
         from pathlib import Path
         schema_path = Path(__file__).parent.parent / "user" / "start" / "JsonSchema.json"
-        
+
         # Load current schema
         with open(schema_path, 'r') as f:
             schema = json.load(f)
-            
+
         export_path = str(schema_path).replace('.json', '_exported.json')
         with open(export_path, 'w') as f:
             json.dump(schema, f, indent=2)
@@ -209,7 +216,7 @@ def export_schema():
 
 def create_schema_dialog():
     """Create the schema management dialog"""
-    
+
     with vuetify.VDialog(
         v_model=("show_schema_dialog", False),
         max_width="1200px",
@@ -228,7 +235,7 @@ def create_schema_dialog():
                     click="show_schema_dialog = false",
                     children=[vuetify.VIcon("mdi-close")]
                 )
-            
+
             with vuetify.VCardText():
                 # Validation Status
                 with vuetify.VRow():
@@ -239,7 +246,7 @@ def create_schema_dialog():
                             colored_border=True,
                         ):
                             html.Div("{{ schema_validation_status }}")
-                
+
                 # Validation and Export buttons
                 with vuetify.VRow():
                     with vuetify.VCol(cols=12):
@@ -266,24 +273,24 @@ def create_schema_dialog():
                             color="info",
                             click=ctrl.export_schema
                         )
-                
+
                 # Tabs for different sections
-                with vuetify.VTabs(v_model="schema_tab", background_color="primary", dark=True):
+                with vuetify.VTabs(v_model=("schema_tab", 0)):
                     vuetify.VTab("Properties")
                     vuetify.VTab("Add Property")
                     vuetify.VTab("Validation Results")
-                
-                with vuetify.VTabsItems(v_model="schema_tab"):
+
+                with vuetify.VTabsItems(value=("schema_tab",)):
                     # Properties Tab
-                    with vuetify.VTabItem():
+                    with vuetify.VTabItem(value=(0,)):
                         create_properties_view()
-                    
+
                     # Add Property Tab
-                    with vuetify.VTabItem():
+                    with vuetify.VTabItem(value=(1,)):
                         create_add_property_form()
-                    
+
                     # Validation Results Tab
-                    with vuetify.VTabItem():
+                    with vuetify.VTabItem(value=(2,)):
                         create_validation_results_view()
 
 def create_properties_view():
@@ -292,18 +299,13 @@ def create_properties_view():
         with vuetify.VRow():
             with vuetify.VCol(cols=12):
                 html.H3("Schema Properties", class_="mb-4")
-                
+
                 # Properties table
                 with vuetify.VDataTable(
-                    headers=[
-                        {"text": "Property", "value": "name"},
-                        {"text": "Type", "value": "type"},
-                        {"text": "Description", "value": "description"},
-                        {"text": "Default", "value": "default"},
-                        {"text": "Actions", "value": "actions", "sortable": False}
-                    ],
+                    headers=("schema_table_headers",),
                     items=("schema_properties_list", []),
-                    class_="elevation-1"
+                    class_="elevation-1",
+                    __properties=[("v_slot_item_actions", "v-slot:item.actions")]
                 ):
                     with vuetify.Template(v_slot_item_actions="{ item }"):
                         vuetify.VBtn(
@@ -319,7 +321,7 @@ def create_add_property_form():
         with vuetify.VRow():
             with vuetify.VCol(cols=12):
                 html.H3("Add New Property", class_="mb-4")
-        
+
         with vuetify.VRow():
             with vuetify.VCol(cols=6):
                 vuetify.VTextField(
@@ -328,7 +330,7 @@ def create_add_property_form():
                     required=True,
                     outlined=True
                 )
-            
+
             with vuetify.VCol(cols=6):
                 vuetify.VSelect(
                     label="Property Type",
@@ -336,7 +338,7 @@ def create_add_property_form():
                     items=("property_types", []),
                     outlined=True
                 )
-        
+
         with vuetify.VRow():
             with vuetify.VCol(cols=12):
                 vuetify.VTextarea(
@@ -345,7 +347,7 @@ def create_add_property_form():
                     outlined=True,
                     rows=2
                 )
-        
+
         with vuetify.VRow():
             with vuetify.VCol(cols=6):
                 vuetify.VTextField(
@@ -354,7 +356,7 @@ def create_add_property_form():
                     outlined=True,
                     hint="JSON format for arrays/objects"
                 )
-            
+
             with vuetify.VCol(cols=6):
                 vuetify.VTextField(
                     label="Enum Values (comma-separated)",
@@ -362,7 +364,7 @@ def create_add_property_form():
                     outlined=True,
                     hint="For string types only"
                 )
-        
+
         with vuetify.VRow():
             with vuetify.VCol(cols=12):
                 vuetify.VBtn(
@@ -378,7 +380,7 @@ def create_validation_results_view():
         with vuetify.VRow():
             with vuetify.VCol(cols=12):
                 html.H3("Validation Results", class_="mb-4")
-        
+
         # Show validation errors if any
         with html.Div(v_if="validation_results.length > 0"):
             with vuetify.VAlert(
@@ -388,19 +390,19 @@ def create_validation_results_view():
                 class_="mb-4"
             ):
                 html.Div("Configuration validation failed. See errors below:")
-            
+
             # Error list
             with html.Div(v_for="(error, index) in validation_results", key="index"):
                 with vuetify.VCard(class_="mb-2"):
                     with vuetify.VCardText():
-                        html.Strong("Path: {{ error.path.join('  ') || 'root' }}")
+                        html.B("Path: {{ error.path.join('  ') || 'root' }}")
                         html.Br()
                         html.Span("Message: {{ error.message }}")
                         html.Br()
                         html.Span("Invalid value: {{ error.invalid_value }}")
-        
+
         # Show success message if valid
-        with html.Div(v_else=""):
+        with html.Div(v_else=True):
             with vuetify.VAlert(
                 type="success",
                 border="left",

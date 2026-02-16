@@ -45,7 +45,7 @@ state.case_list = []
 
 ############# DIALOG CARDS ##############
 
-# Dialog card for managing CASES 
+# Dialog card for managing CASES
 def manage_case_dialog_card():
     with vuetify.VDialog(position='{X:10,Y:10}',
                          width = 650,
@@ -56,11 +56,11 @@ def manage_case_dialog_card():
         with vuetify.VCard():
             vuetify.VCardTitle("Manage Cases",
                            classes="grey lighten-1 py-1 grey--text text--darken-3")
-            
-            
+
+
             with vuetify.VContainer(fluid=True, style = "padding: 20px;"):
             # ####################################################### #
-                
+
                 with vuetify.VRow():
                     with vuetify.VCol( classes='col-3'):
                         markdown.Markdown(
@@ -98,24 +98,24 @@ def manage_case_dialog_card():
 
                 with vuetify.VRow():
                     with vuetify.VCol():
-                        with vuetify.VBtn("Download", 
+                        with vuetify.VBtn("Download",
                                     click=f"utils.download('output.zip', trigger('download_case'))"
                         ):
                             vuetify.VIcon("mdi-download-box-outline")
                     with vuetify.VCol():
-                        with vuetify.VBtn("Delete", 
+                        with vuetify.VBtn("Delete",
                                     click=(delete_case, '[selected_case_idx]'),
                                     disabled=("selected_case_idx == case_name || solver_running", False)
                         ):
                             vuetify.VIcon("mdi-trash-can-outline")
                     with vuetify.VCol():
-                        with vuetify.VBtn("Load Case", 
+                        with vuetify.VBtn("Load Case",
                                     click=(load_case, '[selected_case_idx]'),
                                     disabled=("selected_case_idx == case_name || solver_running", False)
                         ):
                             vuetify.VIcon("mdi-folder-edit-outline")
                     with vuetify.VCol():
-                        with vuetify.VBtn("New Case", 
+                        with vuetify.VBtn("New Case",
                                     disabled=("solver_running",False),
                                     click=open_new_case_dialog
                         ):
@@ -151,7 +151,7 @@ def case_name_dialog_card():
                                     hide_details=True,
                                     dense=True,
                                 )
-                    
+
                     with vuetify.VRow(classname= 'pt-4'):
                         with vuetify.VCol():
                             with vuetify.VCardActions():
@@ -191,7 +191,7 @@ def delete_case(case_name):
         for case in state.case_list:
             delete_case(case)
         return
-    if case_name is None or case_name == '' or case_name == state.case_name: 
+    if case_name is None or case_name == '' or case_name == state.case_name:
         return
     # delete the single case
     log('info', f'case name = {case_name}')
@@ -222,7 +222,7 @@ def download_case():
 
             case_path = os.path.join(user_path, case_name)
             if case_name == '':
-                log("Error", "No case selected.") 
+                log("Error", "No case selected.")
                 return
 
             # check if the case path exists
@@ -298,9 +298,9 @@ def create_new_case():
 
         # Create a default Python wrapper (and config/json) for the new case
         try:
-            json_name = getattr(state, 'filename_json_export', 'config.json')
-            cfg_name = getattr(state, 'filename_cfg_export', 'config.cfg')
-            py_name = getattr(state, 'filename_py_export', 'run_su2.py')
+            json_name = getattr(state, 'filename_json_export', 'config.json') or 'config.json'
+            cfg_name = getattr(state, 'filename_cfg_export', 'config.cfg') or 'config.cfg'
+            py_name = getattr(state, 'filename_py_export', 'run_su2.py') or 'run_su2.py'
             save_json_cfg_py_file(json_name, cfg_name, py_name)
             log("info", f"Default Python wrapper '{py_name}' created for case '{state.case_name}'.")
         except Exception as e:
@@ -329,7 +329,7 @@ def load_case(case_name):
     # get the list of files in the case path
     root, dirs, filenames = os.walk(case_path).__next__()
     del dirs
-    
+
     # try to load mesh file first
     for file in filenames:
         if file.endswith(".su2"):
@@ -376,7 +376,7 @@ def load_case(case_name):
                 return
 
             # got the restart file name, now try to load the restart file
-            restart_path = os.path.join(root, state.restart_filename) 
+            restart_path = os.path.join(root, state.restart_filename)
 
             # check if the restart file exists
             if not os.path.isfile(restart_path):
@@ -421,9 +421,9 @@ def load_case(case_name):
 
     # Ensure a default Python wrapper exists for this case
     try:
-        py_name = getattr(state, 'filename_py_export', 'run_su2.py')
-        json_name = getattr(state, 'filename_json_export', 'config.json')
-        cfg_name_default = getattr(state, 'filename_cfg_export', 'config.cfg')
+        py_name = getattr(state, 'filename_py_export', 'run_su2.py') or 'run_su2.py'
+        json_name = getattr(state, 'filename_json_export', 'config.json') or 'config.json'
+        cfg_name_default = getattr(state, 'filename_cfg_export', 'config.cfg') or 'config.cfg'
 
         py_path = os.path.join(case_path, os.path.splitext(py_name)[0] + '.py')
 
@@ -450,8 +450,8 @@ def load_case(case_name):
 # Button to download the specific output files (currently not is use)
 @ctrl.trigger("download_output_files")
 def download_outputs():
-    files_directory = BASE / "user" / state.case_name 
-    
+    files_directory = BASE / "user" / state.case_name
+
     save_json_cfg_file(state.filename_json_export,state.filename_cfg_export)
     save_su2mesh(root,state.jsonData['MESH_FILENAME'])
 
@@ -465,7 +465,7 @@ def download_outputs():
                         zip_ref.writestr(zinfo_or_arcname=list[1], data=f.read())
                 else:
                     log("Warn", f"{file_path} does not exist and will not be included in the zip file.")
-    
+
     zip_buffer.seek(0)  # Reset buffer position to the beginning
     update_manage_case_dialog_card()
     log("info", f"Zip file downloaded successfully.")
@@ -496,13 +496,13 @@ def case_args(case_name):
 
 # reset the values, when a new case is created
 def reset_values():
-    # we need to terminate or kill the result process here 
+    # we need to terminate or kill the result process here
     if state.solver_running:
         state.solver_running = False
         state.solver_icon="mdi-play-circle"
         # proc_SU2.kill()
 
-    
+
     # reset the input files
     state.restartFile = None
     state.su2_file_upload = None
@@ -564,14 +564,14 @@ def reset_values():
     renderer.AddActor(mesh_actor)
 
     # set su2 logs to empty
-    state.su2_logs = '' 
+    state.su2_logs = ''
 
     # # reset jsondata
     # with open('./user/config.json', 'r') as f:
     #     state.jsonData = json.load(f)
 
     # state.dirty('jsonData')
-    
+
     # # save the cfg file
     # # save_json_cfg_file(state.filename_json_export,state.filename_cfg_export)
 
