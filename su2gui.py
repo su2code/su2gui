@@ -2171,7 +2171,7 @@ def main():
     parser.add_argument('--install', action='store_true', help='Show installer on startup')
 
 
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
 
     mesh_path = args.mesh
     config_path = args.config
