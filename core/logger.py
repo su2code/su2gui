@@ -86,11 +86,11 @@ logging.getLogger().addHandler(custom_handler)
 
 #################### LOGS -> SU2GUI TAB ####################
 def log(type :str, message, **kwargs):
-    
+
     message = str(message)
-    message += "  \n" 
+    message += "  \n"
     if "detail" in kwargs:
-        message+=kwargs.get("detail") + "  \n" 
+        message+=kwargs.get("detail") + "  \n"
 
     if type.upper() == "INFO":
        logger.info(message)
@@ -176,7 +176,7 @@ def update_su2_logs():
 def find_error_message(msg):
     error_found = False
     error_lines = []
-    
+
     for line in msg.splitlines():
         if len(error_lines)>10:
             break
@@ -185,7 +185,7 @@ def find_error_message(msg):
         elif "error" in line.lower().split(' '):
             error_lines.append(line.strip())
             error_found = True
-    
+
     if error_lines:
         error_message = "\n".join(error_lines)
 
@@ -212,7 +212,7 @@ def Error_dialog_card():
 
         with vuetify.VContainer(fluid=True):
             markdown.Markdown(
-                content = ('error_msg', state.error_msg), 
+                content = ('error_msg', state.error_msg),
                 style = "padding: 3rem; color: Red; background-color: white"
             )
             vuetify.VBtn("Close",click=(hide_error_dialog_card)
@@ -232,7 +232,7 @@ def Warn_dialog_card():
 
         with vuetify.VContainer(fluid=True):
             markdown.Markdown(
-                content = ('warn_msg', state.warn_msg), 
+                content = ('warn_msg', state.warn_msg),
                 style = "padding: 3rem; color: #ffcc00; background-color: white"
             )
             vuetify.VBtn("Close",click=(hide_warn_dialog_card)
@@ -258,7 +258,7 @@ def logs_tab():
                 classes="pa-0 fill-height",
                 style="position: relative;"
               ):
-                
+
                 with vuetify.VTabsItems(
                     value=("log_tab",), style="width: 100%; height: 100%;"
                 ):
@@ -270,14 +270,14 @@ def logs_tab():
                                           style="margin-left: 80%;"):
                             vuetify.VIcon("mdi-arrow-down-bold-box-outline")
                         markdown.Markdown(
-                          content = ('md_content', state.md_content), 
+                          content = ('md_content', state.md_content),
                           style = "padding: 0.5rem 3rem; color: black; background-color: white"
                         )
                   with vuetify.VTabItem(
                     value=(1,), style="width: 100%; height: 100%;"
                   ):
                         markdown.Markdown(
-                          content = ('su2_logs', state.su2_logs), 
+                          content = ('su2_logs', state.su2_logs),
                           style = "padding: 3rem; color: black; background-color: white",
                           hide_details = True
                         )
@@ -285,11 +285,11 @@ def logs_tab():
 # Special handling for binary restart file information
 def log_binary_restart_info(message, **kwargs):
     """Special logging function for binary restart file information that's more user-friendly"""
-    
+
     # Create a more informative message
     info_message = f"INFO: {message}"
     if "detail" in kwargs:
         info_message += f" - {kwargs.get('detail')}"
-    
+
     # Log as info rather than warning for binary restart file status
     logger.info(info_message)

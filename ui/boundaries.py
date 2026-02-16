@@ -106,8 +106,8 @@ state.LBoundariesOutlet= [
 LBoundariesWall= [
   {"text": "Temperature", "value": 0},
   {"text": "Heat flux", "value": 1},
-  {"text": "Heat transfer", "value": 2}, 
-  {"text": "Euler", "value": 3}, 
+  {"text": "Heat transfer", "value": 2},
+  {"text": "Euler", "value": 3},
 ]
 
 # determine which boundary dialog card to show based on the boundary selection
@@ -201,7 +201,7 @@ def boundaries_dialog_card_inlet():
                 label="Density [kg/m3]",
               )
 
-        with vuetify.VContainer(fluid=True):  
+        with vuetify.VContainer(fluid=True):
           with vuetify.VRow(classes="py-0 my-0"):
             with vuetify.VCol(cols="8", classes="py-1 my-1 pr-0 mr-0"):
               # checkbox for energy (can only be deselected for incompressible)
@@ -386,7 +386,7 @@ def boundaries_dialog_card_wall():
                 outlined=True,
                 classes="py-0 my-0",
             )
-        
+
         # temperature
         with vuetify.VContainer(fluid=True, v_if=("boundaries_wall_idx==0"), style_="width: 100%; max-width: 500px"):
           # ####################################################### #
@@ -398,7 +398,7 @@ def boundaries_dialog_card_wall():
                 # the name of the list box
                 label="Base Temperature [K]",                #    label= ("selectedBoundaryIndex","none"),
               )
-            
+
           # Custom Temperature Section
           with vuetify.VRow(classes="py-1 my-1", style_="width: 100%"):
             with vuetify.VCol(cols="12", classes="py-1 my-1"):
@@ -433,12 +433,12 @@ def boundaries_dialog_card_wall():
                   persistent_hint=True,
                   classes="py-0 my-0"
                 )
-                
+
             # User-defined variables section - COMMENTED OUT FOR POSITION-BASED ONLY
             # with vuetify.VRow(classes="py-1 my-1", style_="width: 100%"):
             #   with vuetify.VCol(cols="12", classes="py-0 my-0"):
             #     vuetify.VSubheader("User Variables (a, b, c, d...)")
-            # 
+            #
             # with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
             #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
             #     vuetify.VTextField(v_model=("var_a", 293.0), label="a", type="number", dense=True)
@@ -448,7 +448,7 @@ def boundaries_dialog_card_wall():
             #     vuetify.VTextField(v_model=("var_c", 2.0), label="c", type="number", dense=True)
             #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
             #     vuetify.VTextField(v_model=("var_d", 0.0), label="d", type="number", dense=True)
-            # 
+            #
             # with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
             #   with vuetify.VCol(cols="3", classes="py-1 my-1"):
             #     vuetify.VTextField(v_model=("var_e", 0.0), label="e", type="number", dense=True)
@@ -499,7 +499,7 @@ def boundaries_dialog_card_wall():
                 label="Heat Transfer Coefficient [J/K.m^2]",
                 #    label= ("selectedBoundaryIndex","none"),
               )
-          
+
           # Far-field temperature row for heat transfer
           with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
             with vuetify.VCol(cols="12", classes="py-1 my-1", v_if=("boundaries_wall_idx!=3")):
@@ -510,7 +510,7 @@ def boundaries_dialog_card_wall():
                 label="Far-field temperature [K]",
                 #    label= ("selectedBoundaryIndex","none"),
               )
-        
+
         with vuetify.VCardText():
           vuetify.VBtn("close", click=update_boundaries_dialog_card_wall, style_="width: 100%")
 
@@ -524,13 +524,13 @@ def generate_python_wrapper_with_dynamic_temp():
     """Generate Python wrapper with dynamic wall temperature for the selected boundary."""
     print("here")
     log("info", "=== BUTTON CLICKED: Dynamic Temperature Wrapper Generation Started ===")
-    try:        
+    try:
         print("Generating dynamic temperature wrapper...")
         # Check if case_name exists, if not create a default one
         if not hasattr(state, 'case_name') or not state.case_name:
             state.case_name = "default_case"
             log("info", f"No case name found, using default: {state.case_name}")
-            
+
         if not hasattr(state, 'selectedBoundaryName') or not state.selectedBoundaryName:
             log("warning", "No boundary selected. Using default boundary name 'airfoil'")
             state.selectedBoundaryName = "airfoil"
@@ -540,11 +540,11 @@ def generate_python_wrapper_with_dynamic_temp():
         base_temp = getattr(state, 'boundaries_inc_temperature_idx', 300.0)
         boundary_name = state.selectedBoundaryName
         custom_function = getattr(state, 'custom_temperature_function', "560.0 - 260.0*sin(x*pi / 4)")
-        
+
         log("info", f"Generating dynamic temperature wrapper for boundary '{boundary_name}'")
         log("info", f"Base temperature: {base_temp}K")
         log("info", f"Custom function: {custom_function}")
-        
+
         # Get user variables from the boundary card - COMMENTED OUT FOR POSITION-BASED ONLY
         # variables = {
         #     'a': getattr(state, 'var_a', 293.0),
@@ -557,41 +557,41 @@ def generate_python_wrapper_with_dynamic_temp():
         #     'h': getattr(state, 'var_h', 0.0),
         # }
         variables = {}  # No user variables for position-based
-        
+
         log("info", f"Using variables: {variables}")
-        
+
         if not hasattr(state, 'jsonData'):
             state.jsonData = {}
-            
+
         state.jsonData['MARKER_ISOTHERMAL'] = [(boundary_name, base_temp)]
-        
+
         # Set Python custom marker for dynamic control
         if 'MARKER_PYTHON_CUSTOM' not in state.jsonData:
             state.jsonData['MARKER_PYTHON_CUSTOM'] = []
         if boundary_name not in state.jsonData['MARKER_PYTHON_CUSTOM']:
             state.jsonData['MARKER_PYTHON_CUSTOM'].append(boundary_name)
-        
+
         # Import the wrapper generation function        from core.su2_py_wrapper import generate_dynamic_temperature_wrapper
         # Generate the wrapper with dynamic temperature and variables
         wrapper_path = generate_dynamic_temperature_wrapper(
             boundary_marker=boundary_name,
             base_temperature=base_temp,
-            filename_py_export=getattr(state, 'python_wrapper_filename', 'run_su2_dynamic.py'),
+            filename_py_export=getattr(state, 'python_wrapper_filename', 'run_su2_dynamic.py') or 'run_su2_dynamic.py',
             variables=variables,
             temperature_formula=custom_function,
             wrapper_type=getattr(state, 'wrapper_type', 'simple')  # Force simple position-based
         )
-        
+
         # Also save the updated configuration files - import function that exists
         try:
             from core.su2_io import save_json_cfg_file
-            save_json_cfg_file(                filename_json_export=getattr(state, 'filename_json_export', 'config.json'),
-                filename_cfg_export=getattr(state, 'filename_cfg_export', 'config.cfg')
+            save_json_cfg_file(                filename_json_export=getattr(state, 'filename_json_export', 'config.json') or 'config.json',
+                filename_cfg_export=getattr(state, 'filename_cfg_export', 'config.cfg') or 'config.cfg'
             )
         except ImportError:
             # If su2_io doesn't exist, save JSON manually
             log("warning", "Could not import save_json_cfg_file, saving JSON manually")
-        
+
         try:
             import json
             from pathlib import Path
@@ -604,16 +604,16 @@ def generate_python_wrapper_with_dynamic_temp():
         except Exception as e:
             log("warning", f"Could not save configuration files: {str(e)}")
             log("warning", f"Continuing with wrapper generation...")
-        
+
         log("info", f"Dynamic temperature wrapper generated successfully for {boundary_name}")
         log("info", f"Wrapper file: {wrapper_path}")
         log("info", f"Configuration updated with MARKER_ISOTHERMAL and MARKER_PYTHON_CUSTOM")
-        
+
         # Update state to show the generated wrapper path
         if hasattr(state, 'last_generated_wrapper_path'):
             state.last_generated_wrapper_path = str(wrapper_path)
             state.show_wrapper_path_info = True
-        
+
     except Exception as e:
         log("error", f"Failed to generate dynamic temperature wrapper: {str(e)}")
         import traceback
@@ -628,11 +628,11 @@ ctrl.generate_python_wrapper_with_dynamic_temp = generate_python_wrapper_with_dy
 def boundaries_dialog_card_farfield():
     with vuetify.VDialog(width=500, position='{X:10,Y:10}', transition="dialog-top-transition", v_model=("show_boundaries_dialog_card_farfield", False)):
       with vuetify.VCard(width=500, style_="min-width: 500px"):
-        
+
         vuetify.VCardTitle("Far-field",
                            classes="grey lighten-1 py-1 grey--text text--darken-3",
                            style_="width: 100%")
-                           
+
         with vuetify.VContainer(fluid=True, style_="width: 100%; max-width: 500px"):
           with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
             with vuetify.VCol(cols="4", classes="py-1 my-1"):
@@ -655,7 +655,7 @@ def boundaries_dialog_card_farfield():
                 # the name of the list box
                 label="Far-field Z-Velocity [m/s]",
               )
-              
+
           with vuetify.VRow(classes="py-0 my-0", style_="width: 100%"):
             with vuetify.VCol(cols="12", classes="py-1 my-1"):
               vuetify.VTextField(
@@ -680,7 +680,7 @@ def boundaries_dialog_card_farfield():
                 v_model=("boundaries_farfield_rho_idx", 1.2),
                 # the name of the list box                label="Far-field density [kg/m^3]",
               )
-              
+
         with vuetify.VCardText():
           vuetify.VBtn("close", click=update_boundaries_dialog_card_farfield, style_="width: 100%")
 
@@ -985,20 +985,20 @@ def update_boundaries_main(selectedBoundaryName, **kwargs):
     if selectedBoundaryName != 'internal':
       state.boundaries_main_idx = get_boundaries_main_idx_from_name(selectedBoundaryName)
       state.dirty('boundaries_main_idx')
-      
+
       # Load custom temperature settings if they exist for this boundary
       if hasattr(state, 'selectedBoundaryIndex') and state.selectedBoundaryIndex is not None:
           boundary_data = state.BCDictList[state.selectedBoundaryIndex]
-          
+
           # Load custom temperature settings
           state.enable_custom_temperature = boundary_data.get('custom_temperature', False)
           state.custom_temperature_function = boundary_data.get(
-              'temperature_function', 
+              'temperature_function',
               "560.0 - 260.0*sin(x*pi / 4)"
           )
           state.temperature_amplitude = boundary_data.get('temperature_amplitude', 257.0)
           state.temperature_frequency = boundary_data.get('temperature_frequency', 0.5)
-          
+
           log("info", f"Loaded custom temperature settings for {selectedBoundaryName}: "
                      f"enabled={state.enable_custom_temperature}, "
                      f"function={state.custom_temperature_function}")
@@ -1142,7 +1142,7 @@ def update_material(boundaries_inc_inlet_idx, **kwargs):
       state.boundaries_inc_ny_idx = state.BCDictList[state.selectedBoundaryIndex]['bc_velocity_normal'][1]
       state.boundaries_inc_nz_idx = state.BCDictList[state.selectedBoundaryIndex]['bc_velocity_normal'][2]
 
-      # density 
+      # density
       state.boundaries_inc_density_idx = state.BCDictList[state.selectedBoundaryIndex]['bc_density']
 
 # at the moment, we can only set the usenormal globally
@@ -1166,7 +1166,7 @@ def update_material(boundaries_inc_velocity_magnitude_idx, **kwargs):
     #log("info", f"selected boundary name=  = {state.selectedBoundaryName}")
     #log("info", f"selected boundary index=  = {state.selectedBoundaryIndex}")
     state.BCDictList[state.selectedBoundaryIndex]['bcType'] = "Inlet"
-    state.BCDictList[state.selectedBoundaryIndex]['bc_subtype'] = "Velocity inlet" if state.boundaries_inc_inlet_idx==0 else "Mass Flow" 
+    state.BCDictList[state.selectedBoundaryIndex]['bc_subtype'] = "Velocity inlet" if state.boundaries_inc_inlet_idx==0 else "Mass Flow"
     state.BCDictList[state.selectedBoundaryIndex]['bc_velocity_magnitude'] = boundaries_inc_velocity_magnitude_idx
     #state.BCDictList[state.selectedBoundaryIndex]['json'] = "MARKER_INLET"
     #log("info", f"BCDictList =  = {state.BCDictList}")
@@ -1397,7 +1397,7 @@ def update_custom_temperature_enabled(enable_custom_temperature, **kwargs):
         if enable_custom_temperature:
             # Mark this boundary as having custom temperature            state.BCDictList[state.selectedBoundaryIndex]['custom_temperature'] = True
             state.BCDictList[state.selectedBoundaryIndex]['temperature_function'] = getattr(
-                state, 'custom_temperature_function', 
+                state, 'custom_temperature_function',
                 "293.0 + 57.0*sin(2*pi*time)"
             )
         else:
@@ -1444,7 +1444,7 @@ ctrl.test_button_click = test_button_click
 def update_wrapper_type(wrapper_type, **kwargs):
     """Update default temperature formula when wrapper type changes."""
     log("info", f"Wrapper type changed to: {wrapper_type}")
-    
+
     # Update default formula based on wrapper type
     if wrapper_type == "simple":
         # Position-based formula for simple wrapper - use the working formula
@@ -1456,7 +1456,7 @@ def update_wrapper_type(wrapper_type, **kwargs):
     #     default_formula = "a + b*sin(c*pi*time)"
     #     state.custom_temperature_function = default_formula
     #     log("info", "Updated to time-based formula for unsteady CHT wrapper")
-    
+
     # Update the stored boundary settings
     if hasattr(state, 'selectedBoundaryIndex') and state.selectedBoundaryIndex is not None:
         state.BCDictList[state.selectedBoundaryIndex]['wrapper_type'] = wrapper_type
